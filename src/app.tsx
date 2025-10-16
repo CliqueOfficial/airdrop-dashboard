@@ -1,6 +1,7 @@
 import { Suspense, useContext, type Component } from 'solid-js';
 import { A, useLocation } from '@solidjs/router';
 import { ConfigContext } from './context/ConfigContext';
+import WalletConnect from './components/WalletConnect';
 
 const App: Component<{ children: Element }> = (props) => {
   const { baseEnv, setBaseEnv } = useContext(ConfigContext)!;
@@ -25,7 +26,11 @@ const App: Component<{ children: Element }> = (props) => {
             </A>
           </li>
 
-          <li class="test-sm flex items-center space-x-1 ml-auto">
+          <li class="py-2 px-4 ml-auto">
+            <WalletConnect />
+          </li>
+
+          <li class="test-sm flex items-center space-x-1">
             <span>Env:</span>
             <input
               class="w-75px p-1 bg-white text-sm rounded-lg"

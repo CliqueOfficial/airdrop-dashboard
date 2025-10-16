@@ -1,4 +1,4 @@
-import { useConfig } from "../hooks/useConfig";
+import { useConfig } from '../hooks/useConfig';
 
 export default function About() {
   const { config, setBaseUrl, setApiKey } = useConfig();

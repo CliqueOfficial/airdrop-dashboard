@@ -7,7 +7,7 @@ import { Dashboard } from './pages/dashboard';
 export const routes: RouteDefinition[] = [
   {
     path: '/',
-    component: Dashboard,
+    component: lazy(() => import('./pages/home')),
   },
   {
     path: '/about',

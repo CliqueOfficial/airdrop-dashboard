@@ -13,6 +13,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",
     "postcss": "^8.4.49",
+    "prettier": "^3.6.2",
     "solid-devtools": "^0.34.3",
     "tailwindcss": "^4.1.13",
     "vite": "^7.1.4",
@@ -25,6 +26,7 @@
     "@tanstack/solid-query": "^5.90.4",
     "@wagmi/connectors": "^6.0.1",
     "@wagmi/core": "^2.22.1",
+    "solid-icons": "^1.1.0",
     "solid-js": "^1.9.5",
     "viem": "2.x",
     "wagmi": "^2.18.1"

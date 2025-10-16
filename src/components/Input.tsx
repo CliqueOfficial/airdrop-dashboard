@@ -1,4 +1,4 @@
-import { Accessor } from "solid-js";
+import { Accessor } from 'solid-js';
 
 interface InputProps {
   key?: string;
