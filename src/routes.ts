@@ -18,6 +18,14 @@ export const routes: RouteDefinition[] = [
     component: lazy(() => import('./pages/new')),
   },
   {
+    path: '/deployment/:appId/:deployment',
+    component: lazy(() => import('./pages/deployment')),
+  },
+  {
+    path: '/wizard',
+    component: lazy(() => import('./pages/wizard')),
+  },
+  {
     path: '**',
     component: lazy(() => import('./errors/404')),
   },

@@ -99,6 +99,29 @@ export default function Home() {
               </div>
             )}
           </For>
+
+          {/* Create New App Card */}
+          <div
+            onClick={() => navigate('/wizard')}
+            class="bg-white rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer p-6 border-2 border-blue-500 hover:border-blue-600 hover:scale-105 transform duration-200"
+          >
+            <div class="flex flex-col items-center justify-center h-full text-blue-600">
+              <div class="mb-4">
+                <svg class="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              </div>
+              <h2 class="text-2xl font-bold mb-2">Create New App</h2>
+              <p class="text-blue-500 text-center text-sm">
+                Use the wizard to set up a new application
+              </p>
+            </div>
+          </div>
         </div>
 
         <Show when={!allAppConfs.loading && (!allAppConfs() || allAppConfs()!.length === 0)}>

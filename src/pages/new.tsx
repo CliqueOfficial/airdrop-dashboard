@@ -103,6 +103,8 @@ export default function New() {
           </button>
         </div>
 
+        <h1 class="text-2xl font-bold">Relay configuration</h1>
+
         <h1 class="text-2xl font-bold">Batch Configuration</h1>
 
         {/* Display root data */}

@@ -1,6 +1,8 @@
-import { createEffect, createResource, createSignal } from 'solid-js';
+import { createEffect, createMemo, createResource, createSignal } from 'solid-js';
 import { useConfig } from './useConfig';
 import { createStore } from 'solid-js/store';
+import { createConfig } from 'wagmi';
+import { defineChain } from 'viem';
 
 export interface AppConfExtra {
   root: Record<string, string>;
@@ -70,8 +72,8 @@ export const useCurrentAppConf = () => {
   );
 
   createEffect(() => {
-    if (!data.loading && !data.error && data()) {
-      const _appConf = data()!.find((appConf) => appConf.appId === config.currentAppId);
+    if (data.state === 'ready') {
+      const _appConf = data().find((appConf) => appConf.appId === config.currentAppId);
       if (_appConf) {
         const deployments = Object.entries(_appConf.deployments).map(([key, value]) => {
           if (!('root' in value.extra)) {
@@ -103,7 +105,7 @@ export const useCurrentAppConf = () => {
   const setTosMessage = (tosMessage: string) => setAppConf('extra', 'tosMessage', tosMessage);
 
   return {
-    loading: () => data.loading,
+    loading: () => data.state !== 'ready',
     isCreating,
     appConf,
     appRoot,
