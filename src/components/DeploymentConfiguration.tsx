@@ -1,5 +1,5 @@
 import { createStore, unwrap } from 'solid-js/store';
-import { Configuration, Strategy } from '../hooks/useAppConf';
+import { Configuration, Strategy } from '../types';
 import { BsCheck, BsPencil, BsPlus, BsTrash, BsX } from 'solid-icons/bs';
 import { Accessor, createSignal, Show } from 'solid-js';
 

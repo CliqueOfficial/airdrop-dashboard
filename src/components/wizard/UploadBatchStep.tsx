@@ -1,5 +1,5 @@
 import { createSignal, Show } from 'solid-js';
-import { AppConf } from '../../hooks/useAppConf';
+import { AppConf } from '../../types';
 import { SetStoreFunction } from 'solid-js/store';
 import { useConfig } from '../../hooks/useConfig';
 import { Sha256 } from '@aws-crypto/sha256-browser';

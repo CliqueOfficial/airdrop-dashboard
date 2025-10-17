@@ -9,7 +9,6 @@ export const useConfig = () => {
     createStore({
       apiKey: '',
       baseUrl: '',
-      currentAppId: '',
     }),
     {
       name: `dashboard-${baseEnv()}-config`,
@@ -25,11 +24,7 @@ export const useConfig = () => {
     setConfig('apiKey', apiKey);
   };
 
-  const setCurrentAppId = (currentAppId: string) => {
-    setConfig('currentAppId', currentAppId);
-  };
-
-  return { config, setBaseUrl, setApiKey, setCurrentAppId };
+  return { config, setBaseUrl, setApiKey };
 };
 
 interface Deployment {

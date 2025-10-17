@@ -1,10 +1,10 @@
 import { Show, For, createResource } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { useConfig } from '../hooks/useConfig';
-import { type AppConf } from '../hooks/useAppConf';
+import { type AppConf } from '../types';
 
 export default function Home() {
-  const { config, setCurrentAppId } = useConfig();
+  const { config } = useConfig();
   const navigate = useNavigate();
 
   // Fetch all app configs
@@ -25,8 +25,7 @@ export default function Home() {
   );
 
   const handleSelectApp = (appId: string) => {
-    setCurrentAppId(appId);
-    navigate('/new');
+    navigate(`/dashboard/${appId}`);
   };
 
   return (

@@ -3,8 +3,11 @@ import BasicStep from '../components/wizard/BasicStep';
 import DeploymentStep from '../components/wizard/DeploymentStep';
 import RelayerStep from '../components/wizard/RelayerStep';
 import UploadBatchStep from '../components/wizard/UploadBatchStep';
+import HooksStep from '../components/wizard/HooksStep';
+import StrategyStep from '../components/wizard/StrategyStep';
+import ApplyStrategyStep from '../components/wizard/ApplyStrategyStep';
 import { createStore } from 'solid-js/store';
-import { AppConf } from '../hooks/useAppConf';
+import { AppConf } from '../types';
 import { useConfig } from '../hooks/useConfig';
 import { useNavigate } from '@solidjs/router';
 import { makePersisted } from '@solid-primitives/storage';
@@ -29,6 +32,21 @@ const STEPS = [
     name: 'Deployment',
     title: 'Deployment Settings',
     description: 'Configure deployment options',
+  },
+  {
+    name: 'Hooks',
+    title: 'Hooks Configuration',
+    description: 'Configure hooks for your deployments',
+  },
+  {
+    name: 'Strategy',
+    title: 'Distribution Strategy',
+    description: 'Configure token distribution strategy',
+  },
+  {
+    name: 'Apply Strategy',
+    title: 'Apply Strategy to Batch',
+    description: 'Bind batch roots to configurations',
   },
 ];
 
@@ -298,14 +316,14 @@ export default function Wizard() {
 
         {/* Step Bar */}
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div class="flex items-center justify-between">
+          <div class="flex items-start justify-between">
             <For each={STEPS}>
               {(step, index) => (
                 <>
                   <div class="flex flex-col items-center flex-1">
                     <button
                       onClick={() => goToStep(index())}
-                      class={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all duration-200 ${
+                      class={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all duration-200 flex-shrink-0 ${
                         index() === currentStep()
                           ? 'bg-blue-600 text-white scale-110'
                           : index() < currentStep()
@@ -317,7 +335,7 @@ export default function Wizard() {
                     </button>
                     <div class="mt-2 text-center">
                       <div
-                        class={`text-sm font-medium ${
+                        class={`text-xs font-medium ${
                           index() === currentStep() ? 'text-blue-600' : 'text-gray-700'
                         }`}
                       >
@@ -326,7 +344,7 @@ export default function Wizard() {
                     </div>
                   </div>
                   {index() < STEPS.length - 1 && (
-                    <div class="flex-1 h-1 mx-4 mb-8">
+                    <div class="flex-1 h-1 mx-4 mt-5">
                       <div
                         class={`h-full rounded transition-all duration-300 ${
                           index() < currentStep() ? 'bg-green-500' : 'bg-gray-300'
@@ -359,6 +377,15 @@ export default function Wizard() {
             )}
             {currentStep() === 3 && (
               <DeploymentStep appConf={appConf} setAppConf={setAppConf} onSave={saveAppConf} />
+            )}
+            {currentStep() === 4 && (
+              <HooksStep appConf={appConf} setAppConf={setAppConf} onSave={saveAppConf} />
+            )}
+            {currentStep() === 5 && (
+              <StrategyStep appConf={appConf} setAppConf={setAppConf} onSave={saveAppConf} />
+            )}
+            {currentStep() === 6 && (
+              <ApplyStrategyStep appConf={appConf} setAppConf={setAppConf} onSave={saveAppConf} />
             )}
           </div>
         </div>
@@ -445,7 +472,12 @@ export default function Wizard() {
         {showDebug() && (
           <div class="mt-8 bg-gray-900 rounded-lg shadow-lg p-6">
             <div class="flex justify-between items-center mb-3">
-              <h3 class="text-sm font-semibold text-green-400 font-mono">Debug: appConf</h3>
+              <div>
+                <h3 class="text-sm font-semibold text-green-400 font-mono">Debug: appConf</h3>
+                <p class="text-xs text-yellow-400 font-mono mt-1">
+                  Current Step: {currentStep()} / {STEPS.length - 1} ({STEPS[currentStep()].name})
+                </p>
+              </div>
               <button
                 onClick={() => setShowDebug(false)}
                 class="text-gray-400 hover:text-white transition-colors"
