@@ -35,7 +35,7 @@ const applyConfiguration = async (
       deployment,
       projectAdmin,
       hookName: name,
-      startegy: configuration.strategy,
+      strategy: configuration.strategy,
       fallbackIdx: configuration.fallbackIdx,
     }),
   });

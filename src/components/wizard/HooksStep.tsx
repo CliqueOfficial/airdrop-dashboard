@@ -1,5 +1,5 @@
 import { For, createSignal, Show, createMemo } from 'solid-js';
-import type { AppConf } from '../../hooks/useAppConf';
+import type { AppConf } from '../../types';
 import { SetStoreFunction } from 'solid-js/store';
 import { BsCheck2Circle } from 'solid-icons/bs';
 import { VsWarning } from 'solid-icons/vs';
