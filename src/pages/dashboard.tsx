@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from '@solidjs/router';
-import { createSignal } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
 import { useConfig } from '../hooks/useConfig';
 import { TbEdit } from 'solid-icons/tb';
@@ -11,7 +11,7 @@ export default function Dashboard() {
   const { appId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = createSignal<TabType>('deployments');
-  
+
   // Persisted signal to track in-progress app ID (same as wizard)
   const [wizardInProgressAppId, setWizardInProgressAppId] = makePersisted(createSignal(''), {
     name: 'wizard-in-progress-app-id',
@@ -44,7 +44,7 @@ export default function Dashboard() {
             <TbEdit size={24} />
           </button>
         </div>
-        
+
         {/* Tab Navigation */}
         <div class="border-b border-gray-200 mb-6">
           <nav class="-mb-px flex space-x-8">
@@ -53,10 +53,9 @@ export default function Dashboard() {
                 onClick={() => setActiveTab(tab.id)}
                 class={`
                   py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                  ${
-                    activeTab() === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ${activeTab() === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }
                 `}
               >
@@ -68,26 +67,26 @@ export default function Dashboard() {
 
         {/* Tab Content */}
         <div class="bg-white rounded-lg shadow p-6">
-          {activeTab() === 'deployments' && (
+          <Show when={activeTab() === 'deployments'}>
             <div>
               <h2 class="text-xl font-semibold text-gray-900 mb-4">Deployments Overview</h2>
               <p class="text-gray-500">Content coming soon...</p>
             </div>
-          )}
+          </Show>
 
-          {activeTab() === 'relay' && (
+          <Show when={activeTab() === 'relay'}>
             <div>
               <h2 class="text-xl font-semibold text-gray-900 mb-4">Relay Overview</h2>
               <p class="text-gray-500">Content coming soon...</p>
             </div>
-          )}
+          </Show>
 
-          {activeTab() === 'batch' && (
+          <Show when={activeTab() === 'batch'}>
             <div>
               <h2 class="text-xl font-semibold text-gray-900 mb-4">Batch Overview</h2>
               <p class="text-gray-500">Content coming soon...</p>
             </div>
-          )}
+          </Show>
         </div>
       </div>
     </div>

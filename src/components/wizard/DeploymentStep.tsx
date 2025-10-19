@@ -1,5 +1,5 @@
 import { createSignal, For, Show, createResource, createMemo } from 'solid-js';
-import { AppConf, Deployment } from '../../hooks/useAppConf';
+import type { AppConf, Deployment } from '../../types';
 import { SetStoreFunction } from 'solid-js/store';
 import { useConfig } from '../../hooks/useConfig';
 import { BsCheck2Circle } from 'solid-icons/bs';
@@ -89,6 +89,8 @@ export default function DeploymentStep(props: DeploymentStepProps) {
   const [deployError, setDeployError] = createSignal<string | null>(null);
   const [isDeploying, setIsDeploying] = createSignal(false);
   const [deployStatus, setDeployStatus] = createSignal<string>('');
+  const [isEditingRpcUrl, setIsEditingRpcUrl] = createSignal(false);
+  const [editingRpcUrl, setEditingRpcUrl] = createSignal('');
 
   // Create chain config and public client for selected deployment
   const chainConfig = createMemo(() => {
@@ -253,6 +255,48 @@ export default function DeploymentStep(props: DeploymentStepProps) {
         setIsSaving(false);
       }
     }
+  };
+
+  const handleStartEditRpcUrl = () => {
+    const deployment = selectedDeployment();
+    if (!deployment) return;
+    setEditingRpcUrl(props.appConf.deployments[deployment]?.rpcUrl || '');
+    setIsEditingRpcUrl(true);
+  };
+
+  const handleCancelEditRpcUrl = () => {
+    setIsEditingRpcUrl(false);
+    setEditingRpcUrl('');
+    setError(null);
+  };
+
+  const handleSaveRpcUrl = async () => {
+    const deployment = selectedDeployment();
+    if (!deployment) return;
+
+    if (!editingRpcUrl().trim()) {
+      setError('RPC URL is required');
+      return;
+    }
+
+    // Update RPC URL
+    props.setAppConf('deployments', deployment, 'rpcUrl', editingRpcUrl());
+
+    // Save to remote
+    if (props.onSave) {
+      setIsSaving(true);
+      const saved = await props.onSave();
+      setIsSaving(false);
+
+      if (!saved) {
+        setError('Failed to save RPC URL. Please try again.');
+        return;
+      }
+    }
+
+    setIsEditingRpcUrl(false);
+    setEditingRpcUrl('');
+    setError(null);
   };
 
   const validateAddress = (address: string): boolean => {
@@ -708,6 +752,60 @@ export default function DeploymentStep(props: DeploymentStepProps) {
                 </div>
               </div>
             </Show>
+
+            {/* RPC URL Configuration - Editable even when deployed */}
+            <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1">
+                  <p class="text-xs font-medium text-blue-800 mb-1">RPC URL</p>
+                  <Show
+                    when={isEditingRpcUrl()}
+                    fallback={
+                      <div class="flex items-center gap-2">
+                        <p class="text-xs text-blue-700 font-mono break-all flex-1">
+                          {props.appConf.deployments[selectedDeployment()!]?.rpcUrl}
+                        </p>
+                        <button
+                          onClick={handleStartEditRpcUrl}
+                          class="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex-shrink-0"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    }
+                  >
+                    <div class="space-y-2">
+                      <input
+                        type="url"
+                        value={editingRpcUrl()}
+                        onInput={(e) => {
+                          setEditingRpcUrl(e.currentTarget.value);
+                          setError(null);
+                        }}
+                        class="w-full px-3 py-2 text-xs border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="https://..."
+                      />
+                      <div class="flex gap-2">
+                        <button
+                          onClick={handleSaveRpcUrl}
+                          disabled={isSaving()}
+                          class="flex-1 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSaving() ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                          onClick={handleCancelEditRpcUrl}
+                          disabled={isSaving()}
+                          class="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </Show>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Deployment Configuration Section */}
