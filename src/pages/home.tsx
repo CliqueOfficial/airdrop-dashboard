@@ -1,11 +1,18 @@
-import { Show, For, createResource } from 'solid-js';
+import { Show, For, createResource, createSignal } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { useConfig } from '../hooks/useConfig';
 import { type AppConf } from '../types';
+import { makePersisted } from '@solid-primitives/storage';
 
 export default function Home() {
   const { config } = useConfig();
   const navigate = useNavigate();
+
+  // Persisted signal to track in-progress app ID (same as wizard)
+  const [wizardInProgressAppId, setWizardInProgressAppId] = makePersisted(createSignal(''), {
+    name: 'wizard-in-progress-app-id',
+    storage: localStorage,
+  });
 
   // Fetch all app configs
   const [allAppConfs] = createResource(
@@ -26,6 +33,13 @@ export default function Home() {
 
   const handleSelectApp = (appId: string) => {
     navigate(`/dashboard/${appId}`);
+  };
+
+  const handleCreateNewApp = () => {
+    // Clear the in-progress app ID to ensure a fresh start
+    setWizardInProgressAppId('');
+    console.log('Cleared in-progress app ID for new app creation');
+    navigate('/wizard');
   };
 
   return (
@@ -101,7 +115,7 @@ export default function Home() {
 
           {/* Create New App Card */}
           <div
-            onClick={() => navigate('/wizard')}
+            onClick={handleCreateNewApp}
             class="bg-white rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer p-6 border-2 border-blue-500 hover:border-blue-600 hover:scale-105 transform duration-200"
           >
             <div class="flex flex-col items-center justify-center h-full text-blue-600">
