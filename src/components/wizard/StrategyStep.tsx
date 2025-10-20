@@ -7,7 +7,7 @@ import { FaSolidPlus } from 'solid-icons/fa';
 import { parseEther, formatEther, defineChain, http, keccak256, toBytes } from 'viem';
 import { createConfig, getPublicClient } from '@wagmi/core';
 import { useConfig } from '../../hooks/useConfig';
-import DistributorAbi from '../../abi/Distributor.abi.json';
+import DistributorAbi from '../../abi/Distributor.abi';
 
 interface StrategyStepProps {
   appConf: AppConf;

@@ -3,8 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # 当推送到 main 分支时触发
-  workflow_dispatch:  # 允许手动触发
+      - main # 当推送到 main 分支时触发
+  workflow_dispatch: # 允许手动触发
 
 # 设置 GITHUB_TOKEN 的权限
 permissions:
@@ -14,7 +14,7 @@ permissions:
 
 # 只允许一个部署同时进行
 concurrency:
-  group: "pages"
+  group: 'pages'
   cancel-in-progress: false
 
 jobs:
@@ -59,4 +59,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-

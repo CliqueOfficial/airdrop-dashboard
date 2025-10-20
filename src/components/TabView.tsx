@@ -1,14 +1,11 @@
-import { Accessor, createSignal, For, JSX, Show } from "solid-js";
+import { Accessor, createSignal, For, JSX, Show } from 'solid-js';
 
 interface TabViewProps {
   tabs: {
     id: string;
     label: string;
   }[];
-  children: (tab: {
-    id: string;
-    label: string;
-  }) => JSX.Element;
+  children: (tab: { id: string; label: string }) => JSX.Element;
 }
 
 export default function TabView(props: TabViewProps) {
@@ -24,7 +21,7 @@ export default function TabView(props: TabViewProps) {
         <nav class="-mb-px flex space-x-1 overflow-x-auto">
           <For each={props.tabs}>
             {(tab) => (
-              <button 
+              <button
                 class={`
                   min-w-0 flex-1 sm:flex-initial
                   whitespace-nowrap py-3 px-6 
@@ -47,14 +44,15 @@ export default function TabView(props: TabViewProps) {
 
       {/* Tab Content */}
       <div class="py-2">
-        <Show when={activeTab()} fallback={
-          <div class="text-center py-12 text-gray-400">
-            <p>No content available</p>
-          </div>
-        }>
-          <div class="animate-fadeIn">
-            {props.children(activeTab()!)}
-          </div>
+        <Show
+          when={activeTab()}
+          fallback={
+            <div class="text-center py-12 text-gray-400">
+              <p>No content available</p>
+            </div>
+          }
+        >
+          <div class="animate-fadeIn">{props.children(activeTab()!)}</div>
         </Show>
       </div>
     </div>

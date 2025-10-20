@@ -1,8 +1,11 @@
 import { useParams, useNavigate } from '@solidjs/router';
-import { createSignal, Show } from 'solid-js';
+import { createSignal, For, Show } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
 import { useConfig } from '../hooks/useConfig';
 import { TbEdit } from 'solid-icons/tb';
+import { useAppConf } from '../hooks/useAppConf';
+import Deployment from '../components/dashboard/deployment';
+import Relayers from '../components/dashboard/relayer';
 
 type TabType = 'deployments' | 'relay' | 'batch';
 
@@ -11,6 +14,8 @@ export default function Dashboard() {
   const { appId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = createSignal<TabType>('deployments');
+
+  const { appConf, deployments, refetch } = useAppConf(() => appId);
 
   // Persisted signal to track in-progress app ID (same as wizard)
   const [wizardInProgressAppId, setWizardInProgressAppId] = makePersisted(createSignal(''), {
@@ -53,9 +58,10 @@ export default function Dashboard() {
                 onClick={() => setActiveTab(tab.id)}
                 class={`
                   py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                  ${activeTab() === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ${
+                    activeTab() === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }
                 `}
               >
@@ -68,17 +74,13 @@ export default function Dashboard() {
         {/* Tab Content */}
         <div class="bg-white rounded-lg shadow p-6">
           <Show when={activeTab() === 'deployments'}>
-            <div>
-              <h2 class="text-xl font-semibold text-gray-900 mb-4">Deployments Overview</h2>
-              <p class="text-gray-500">Content coming soon...</p>
-            </div>
+            <For each={Object.entries(deployments())}>
+              {([name, deployment]) => <Deployment name={name} deployment={deployment} />}
+            </For>
           </Show>
 
           <Show when={activeTab() === 'relay'}>
-            <div>
-              <h2 class="text-xl font-semibold text-gray-900 mb-4">Relay Overview</h2>
-              <p class="text-gray-500">Content coming soon...</p>
-            </div>
+            <Relayers appId={appId || ''} />
           </Show>
 
           <Show when={activeTab() === 'batch'}>

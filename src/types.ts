@@ -5,8 +5,14 @@ export interface AppConfExtra {
   [key: string]: any;
 }
 
+export interface Relayer {
+  address: string;
+  chainId: string;
+  nonce: string;
+  online: boolean;
+}
+
 export interface DeploymentExtra {
-  root?: Record<string, string>;
   configurations?: Record<string, Configuration>;
   [key: string]: any;
 }

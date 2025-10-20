@@ -1,5 +1,5 @@
-import { createConfig, getPublicClient } from "@wagmi/core";
-import { defineChain, http } from "viem";
+import { createConfig, getPublicClient } from '@wagmi/core';
+import { defineChain, http } from 'viem';
 
 export const createPublicClient = (chainId: string, rpcUrl: string) => {
   const chain = defineChain({
@@ -18,7 +18,12 @@ export const createPublicClient = (chainId: string, rpcUrl: string) => {
   const config = createConfig({
     chains: [chain],
     transports: {
-      [chain.id]: http(rpcUrl),
+      [chain.id]: http(rpcUrl, {
+        batch: {
+          batchSize: 3,
+          wait: 500,
+        },
+      }),
     },
   });
   return getPublicClient(config);

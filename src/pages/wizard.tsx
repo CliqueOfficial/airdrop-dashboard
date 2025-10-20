@@ -6,6 +6,7 @@ import UploadBatchStep from '../components/wizard/UploadBatchStep';
 import HooksStep from '../components/wizard/HooksStep';
 import StrategyStep from '../components/wizard/StrategyStep';
 import ApplyStrategyStep from '../components/wizard/ApplyStrategyStep';
+import ConfigureFeeStep from '../components/wizard/ConfigureFeeStep';
 import { createStore } from 'solid-js/store';
 import { AppConf } from '../types';
 import { useConfig } from '../hooks/useConfig';
@@ -47,6 +48,11 @@ const STEPS = [
     name: 'Apply Strategy',
     title: 'Apply Strategy to Batch',
     description: 'Bind batch roots to configurations',
+  },
+  {
+    name: 'Configure Fee',
+    title: 'Configure Fee',
+    description: 'Configure fee settings for your airdrop',
   },
 ];
 
@@ -386,6 +392,14 @@ export default function Wizard() {
             )}
             {currentStep() === 6 && (
               <ApplyStrategyStep appConf={appConf} setAppConf={setAppConf} onSave={saveAppConf} />
+            )}
+            {currentStep() === 7 && (
+              <ConfigureFeeStep
+                appId={appConf.appId}
+                deployments={appConf.deployments}
+                roots={appConf.extra.root}
+                onSave={async () => true}
+              />
             )}
           </div>
         </div>

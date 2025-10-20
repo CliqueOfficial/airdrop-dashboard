@@ -8,7 +8,7 @@ import { FaSolidPlus } from 'solid-icons/fa';
 import { defineChain, http, keccak256, toBytes } from 'viem';
 import { createConfig, getPublicClient } from '@wagmi/core';
 import { useConfig } from '../../hooks/useConfig';
-import DistributorAbi from '../../abi/Distributor.abi.json';
+import DistributorAbi from '../../abi/Distributor.abi';
 import { createPublicClient } from '../../util';
 import TabView from '../TabView';
 
@@ -18,7 +18,15 @@ interface ApplyStrategyStepProps {
   onSave?: () => Promise<boolean>;
 }
 
-const setClaimRoot = async (baseUrl: string, apiKey: string, appId: string, deployment: string, projectAdmin: string, root: `0x${string}`, configuration: `0x${string}`) => {
+const setClaimRoot = async (
+  baseUrl: string,
+  apiKey: string,
+  appId: string,
+  deployment: string,
+  projectAdmin: string,
+  root: `0x${string}`,
+  configuration: `0x${string}`
+) => {
   const response = await fetch(`${baseUrl}/admin/relay/distributor/set-claim-root`, {
     method: 'POST',
     headers: {
@@ -30,7 +38,7 @@ const setClaimRoot = async (baseUrl: string, apiKey: string, appId: string, depl
       deployment,
       projectAdmin,
       root,
-      configuration
+      configuration,
     }),
   });
 
@@ -50,17 +58,22 @@ export default function ApplyStrategyStep(props: ApplyStrategyStepProps) {
       id: name,
       label: name,
     }));
-  }
+  };
 
   return (
     <TabView tabs={tabs()}>
       {(tab) => (
         <div>
-          <DeploymentConfigurationPanel appId={props.appConf.appId} name={tab.id} deployment={deployments()[tab.id]} roots={availableRoots} />
+          <DeploymentConfigurationPanel
+            appId={props.appConf.appId}
+            name={tab.id}
+            deployment={deployments()[tab.id]}
+            roots={availableRoots}
+          />
         </div>
       )}
     </TabView>
-  )
+  );
 }
 
 interface DeploymentConfigurationPanelProps {
@@ -73,8 +86,12 @@ interface DeploymentConfigurationPanelProps {
 function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) {
   const { config } = useConfig();
   const contractAddress = createMemo(() => props.deployment.roles.contract);
-  const client = createMemo(() => createPublicClient(props.deployment.chainId, props.deployment.rpcUrl));
-  const availableConfigurationId = createMemo(() => Object.keys(props.deployment.extra.configurations || {}));
+  const client = createMemo(() =>
+    createPublicClient(props.deployment.chainId, props.deployment.rpcUrl)
+  );
+  const availableConfigurationId = createMemo(() =>
+    Object.keys(props.deployment.extra.configurations || {})
+  );
 
   const [selectedRoot, setSelectedRoot] = createSignal<string>('');
   const [selectedConfiguration, setSelectedConfiguration] = createSignal<string>('');
@@ -82,32 +99,35 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
   const [applyError, setApplyError] = createSignal<string | null>(null);
   const [removingRoot, setRemovingRoot] = createSignal<string | null>(null);
 
+  const [configuredRoots, { refetch }] = createResource(
+    () => ({
+      client: client(),
+      contractAddress: contractAddress(),
+      roots: props.roots(),
+      availableConfigurationId: availableConfigurationId(),
+    }),
+    async ({ client, contractAddress, roots, availableConfigurationId }) => {
+      const configurationIdPromises = Object.entries(roots).map(async ([name, root]) => {
+        if (!client || !contractAddress) return {};
+        const configurationId = await client.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: DistributorAbi,
+          functionName: 'configurationId',
+          args: [root as `0x${string}`],
+        });
 
-  const [configuredRoots, { refetch }] = createResource(() => ({
-    client: client(),
-    contractAddress: contractAddress(),
-    roots: props.roots(),
-    availableConfigurationId: availableConfigurationId(),
-  }), async ({ client, contractAddress, roots, availableConfigurationId }) => {
-    const { config } = useConfig();
-    const configurationIdPromises = Object.entries(roots).map(async ([name, root]) => {
-      if (!client || !contractAddress) return {};
-      const configurationId = await client.readContract({
-        address: contractAddress as `0x${string}`,
-        abi: DistributorAbi,
-        functionName: 'configurationId',
-        args: [root],
+        const id = availableConfigurationId.find(
+          (id) => keccak256(toBytes(id)) === configurationId
+        );
+
+        return {
+          name,
+          id,
+        };
       });
-
-      const id = availableConfigurationId.find((id) => keccak256(toBytes(id)) === configurationId);
-
-      return {
-        name,
-        id
-      };
-    });
-    return Promise.all(configurationIdPromises);
-  });
+      return Promise.all(configurationIdPromises);
+    }
+  );
 
   const handleSetClaimRoot = async (root: `0x${string}`, configuration: `0x${string}`) => {
     // Call API to set claim root via relay
@@ -120,48 +140,51 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
       root,
       configuration
     );
-    
+
     // Wait for transaction receipt
     const currentClient = client();
     if (!currentClient) {
       throw new Error('Client not initialized');
     }
-    
+
     const receipt = await currentClient.waitForTransactionReceipt({
       hash: txHash as `0x${string}`,
       timeout: 60_000, // 60 seconds timeout
     });
-    
+
     if (receipt.status !== 'success') {
       throw new Error('Transaction failed');
     }
-    
+
     // Refetch the configured roots after successful transaction
     refetch();
-    
+
     return receipt;
-  }
+  };
 
   const handleRemoveRoot = async (rootName: string) => {
     const rootHash = props.roots()[rootName] as `0x${string}`;
     if (!rootHash) {
       throw new Error('Root hash not found');
     }
-    
+
     // Set claim root to zero bytes32 to remove it
-    const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`;
+    const ZERO_BYTES32 =
+      '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`;
     await handleSetClaimRoot(rootHash, ZERO_BYTES32);
-  }
+  };
 
   return (
     <div class="space-y-4">
-      <Suspense fallback={
-        <div class="flex items-center justify-center py-12">
-          <div class="text-gray-400 text-sm">Loading configurations...</div>
-        </div>
-      }>
+      <Suspense
+        fallback={
+          <div class="flex items-center justify-center py-12">
+            <div class="text-gray-400 text-sm">Loading configurations...</div>
+          </div>
+        }
+      >
         <Show
-          when={configuredRoots() && configuredRoots()!.filter(r => r.id).length > 0}
+          when={configuredRoots() && configuredRoots()!.filter((r) => r.id).length > 0}
           fallback={
             <div class="text-center py-12 px-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
               <FiSettings class="w-12 h-12 mx-auto text-gray-400 mb-3" />
@@ -191,7 +214,9 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
 
                           <div class="space-y-1">
                             <div class="flex items-center gap-2">
-                              <span class="text-xs font-medium text-gray-500">Configuration ID:</span>
+                              <span class="text-xs font-medium text-gray-500">
+                                Configuration ID:
+                              </span>
                               <code class="text-xs font-mono text-gray-700 bg-gray-100 px-2 py-1 rounded">
                                 {root.id}
                               </code>
@@ -217,22 +242,33 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
                             onClick={async () => {
                               const rootName = root.name;
                               if (!rootName) return;
-                              
-                              if (!confirm(`Are you sure you want to remove the configuration for "${rootName}"? This will set its claim root to zero.`)) {
+
+                              if (
+                                !confirm(
+                                  `Are you sure you want to remove the configuration for "${rootName}"? This will set its claim root to zero.`
+                                )
+                              ) {
                                 return;
                               }
-                              
+
                               setRemovingRoot(rootName);
                               try {
                                 await handleRemoveRoot(rootName);
                               } catch (error) {
-                                alert(error instanceof Error ? error.message : 'Failed to remove configuration');
+                                alert(
+                                  error instanceof Error
+                                    ? error.message
+                                    : 'Failed to remove configuration'
+                                );
                               } finally {
                                 setRemovingRoot(null);
                               }
                             }}
                           >
-                            <Show when={removingRoot() === root.name} fallback={<BsTrash class="w-4 h-4" />}>
+                            <Show
+                              when={removingRoot() === root.name}
+                              fallback={<BsTrash class="w-4 h-4" />}
+                            >
                               <div class="w-4 h-4 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />
                             </Show>
                             <span>{removingRoot() === root.name ? 'Removing...' : 'Remove'}</span>
@@ -259,9 +295,7 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
         <div class="space-y-4">
           {/* Root Selection */}
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Select Root
-            </label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Select Root</label>
             <select
               class="
                 w-full px-4 py-2.5 
@@ -275,18 +309,14 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
             >
               <option value="">Choose a root...</option>
               <For each={Object.entries(props.roots())}>
-                {([name, hash]) => (
-                  <option value={name}>{name}</option>
-                )}
+                {([name, hash]) => <option value={name}>{name}</option>}
               </For>
             </select>
           </div>
 
           {/* Configuration Selection */}
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Select Configuration
-            </label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Select Configuration</label>
             <select
               class="
                 w-full px-4 py-2.5 
@@ -302,9 +332,7 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
             >
               <option value="">Choose a configuration...</option>
               <For each={availableConfigurationId()}>
-                {(configId) => (
-                  <option value={configId}>{configId}</option>
-                )}
+                {(configId) => <option value={configId}>{configId}</option>}
               </For>
             </select>
             <Show when={availableConfigurationId().length === 0}>
@@ -345,24 +373,26 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
                 try {
                   const rootName = selectedRoot();
                   const configName = selectedConfiguration();
-                  
+
                   // Get root hash
                   const rootHash = props.roots()[rootName] as `0x${string}`;
                   if (!rootHash) {
                     throw new Error('Root hash not found');
                   }
-                  
+
                   // Get configuration hash
                   const configHash = keccak256(toBytes(configName));
-                  
+
                   // Apply the configuration
                   await handleSetClaimRoot(rootHash, configHash);
-                  
+
                   // Success - reset form
                   setSelectedRoot('');
                   setSelectedConfiguration('');
                 } catch (error) {
-                  setApplyError(error instanceof Error ? error.message : 'Failed to apply configuration');
+                  setApplyError(
+                    error instanceof Error ? error.message : 'Failed to apply configuration'
+                  );
                 } finally {
                   setIsApplying(false);
                 }
@@ -398,5 +428,5 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,0 +1,1246 @@
+export default [
+  {
+    type: 'constructor',
+    inputs: [
+      {
+        name: '_signer',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: '_token',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: '_projectAdmin',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: '_vault',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: '_dynamicRecipient',
+        type: 'bool',
+        internalType: 'bool',
+      },
+      {
+        name: '_isWrappedToken',
+        type: 'bool',
+        internalType: 'bool',
+      },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'receive',
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'HOOK',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'PROJECT_ADMIN',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'active',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'bool',
+        internalType: 'bool',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'activeWindowEndTime',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'activeWindowStartTime',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'cancelOwnershipHandover',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'claim',
+    inputs: [
+      {
+        name: '_proof',
+        type: 'bytes32[]',
+        internalType: 'bytes32[]',
+      },
+      {
+        name: '_signature',
+        type: 'bytes',
+        internalType: 'bytes',
+      },
+      {
+        name: '_amount',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: '_released',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: '_handler',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: '_onBehalfOf',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: '_extra',
+        type: 'bytes',
+        internalType: 'bytes',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'claimed',
+    inputs: [
+      {
+        name: '',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: '',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    outputs: [
+      {
+        name: 'lastClaimedBlock',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: 'claimedAmount',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'completeOwnershipHandover',
+    inputs: [
+      {
+        name: 'pendingOwner',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'configurationId',
+    inputs: [
+      {
+        name: 'root',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    outputs: [
+      {
+        name: 'configurationId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'dynamicRecipient',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'bool',
+        internalType: 'bool',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'feeModes',
+    inputs: [
+      {
+        name: 'root',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'uint8',
+        internalType: 'enum FeeMode',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'fixedFees',
+    inputs: [
+      {
+        name: 'root',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getBatchConfiguration',
+    inputs: [
+      {
+        name: '_configurationId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        internalType: 'struct BatchConfiguration',
+        components: [
+          {
+            name: 'strategies',
+            type: 'tuple[]',
+            internalType: 'struct Strategy[]',
+            components: [
+              {
+                name: 'proportion',
+                type: 'uint256',
+                internalType: 'uint256',
+              },
+              {
+                name: 'hook',
+                type: 'address',
+                internalType: 'address',
+              },
+            ],
+          },
+          {
+            name: 'fallbackHook',
+            type: 'uint256',
+            internalType: 'uint256',
+          },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getHookAddr',
+    inputs: [
+      {
+        name: '_configurationId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: '_index',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'grantRoles',
+    inputs: [
+      {
+        name: 'user',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: 'roles',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'hasAllRoles',
+    inputs: [
+      {
+        name: 'user',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: 'roles',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'bool',
+        internalType: 'bool',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'hasAnyRole',
+    inputs: [
+      {
+        name: 'user',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: 'roles',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'bool',
+        internalType: 'bool',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'hookTransfer',
+    inputs: [
+      {
+        name: '_recipient',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: '_amount',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'isWrappedToken',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'bool',
+        internalType: 'bool',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'owner',
+    inputs: [],
+    outputs: [
+      {
+        name: 'result',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'ownershipHandoverExpiresAt',
+    inputs: [
+      {
+        name: 'pendingOwner',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    outputs: [
+      {
+        name: 'result',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'pause',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'renounceOwnership',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'renounceRoles',
+    inputs: [
+      {
+        name: 'roles',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'requestOwnershipHandover',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'requiredFee',
+    inputs: [
+      {
+        name: '_root',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: '_amount',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'revokeRoles',
+    inputs: [
+      {
+        name: 'user',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: 'roles',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'rolesOf',
+    inputs: [
+      {
+        name: 'user',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    outputs: [
+      {
+        name: 'roles',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'setActiveWindow',
+    inputs: [
+      {
+        name: '_startTime',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: '_endTime',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setClaimRoot',
+    inputs: [
+      {
+        name: '_claimRoot',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: '_configurationId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setDefault',
+    inputs: [
+      {
+        name: '_root',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setDynamicRecipient',
+    inputs: [
+      {
+        name: '_dynamicRecipient',
+        type: 'bool',
+        internalType: 'bool',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setFixedFee',
+    inputs: [
+      {
+        name: '_root',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: '_fee',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setHooks',
+    inputs: [
+      {
+        name: '_configurationId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: '_strategies',
+        type: 'tuple[]',
+        internalType: 'struct Strategy[]',
+        components: [
+          {
+            name: 'proportion',
+            type: 'uint256',
+            internalType: 'uint256',
+          },
+          {
+            name: 'hook',
+            type: 'address',
+            internalType: 'address',
+          },
+        ],
+      },
+      {
+        name: '_fallbackHook',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setIsWrappedToken',
+    inputs: [
+      {
+        name: '_isWrappedToken',
+        type: 'bool',
+        internalType: 'bool',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setSigner',
+    inputs: [
+      {
+        name: '_signer',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setSingleTierFeeRate',
+    inputs: [
+      {
+        name: '_root',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: '_feeRate',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: '_minFee',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: '_maxFee',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setToken',
+    inputs: [
+      {
+        name: '_token',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setVault',
+    inputs: [
+      {
+        name: '_vault',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'signer',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'singleTierFeeRates',
+    inputs: [
+      {
+        name: 'root',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    outputs: [
+      {
+        name: 'feeRate',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: 'minFee',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: 'maxFee',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'token',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'transferOwnership',
+    inputs: [
+      {
+        name: 'newOwner',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'unpause',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'vault',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'version',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'string',
+        internalType: 'string',
+      },
+    ],
+    stateMutability: 'pure',
+  },
+  {
+    type: 'function',
+    name: 'withdrawFee',
+    inputs: [
+      {
+        name: '_recipient',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'event',
+    name: 'ActiveWindowSet',
+    inputs: [
+      {
+        name: 'startTime',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+      {
+        name: 'endTime',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'AirdropClaimed',
+    inputs: [
+      {
+        name: 'account',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'root',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'amount',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'DefaultFeeApplied',
+    inputs: [
+      {
+        name: 'root',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'FixedFeeSet',
+    inputs: [
+      {
+        name: 'root',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'fee',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'HookAdded',
+    inputs: [
+      {
+        name: 'configurationId',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'MerkleConfigurationUpdated',
+    inputs: [
+      {
+        name: 'root',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'configurator',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'OwnershipHandoverCanceled',
+    inputs: [
+      {
+        name: 'pendingOwner',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'OwnershipHandoverRequested',
+    inputs: [
+      {
+        name: 'pendingOwner',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'OwnershipTransferred',
+    inputs: [
+      {
+        name: 'oldOwner',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'newOwner',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'Paused',
+    inputs: [],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'RolesUpdated',
+    inputs: [
+      {
+        name: 'user',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'roles',
+        type: 'uint256',
+        indexed: true,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'SingleTierFeeRateSet',
+    inputs: [
+      {
+        name: 'root',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'feeRate',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+      {
+        name: 'minFee',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+      {
+        name: 'maxFee',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'TokenSet',
+    inputs: [
+      {
+        name: 'token',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'Unpaused',
+    inputs: [],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'VaultSet',
+    inputs: [
+      {
+        name: 'vault',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'Withdrawn',
+    inputs: [
+      {
+        name: 'to',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'amount',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'error',
+    name: 'AlreadyClaimed',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'AlreadyInitialized',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'ConsumedAmountMismatch',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'DefaultFeeNotSet',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'HandlerMismatch',
+    inputs: [
+      {
+        name: 'handler',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: 'onBehalfOf',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'HookDataLengthMismatch',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'IncorrectFee',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InsufficientAllocation',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidFeeConfig',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidMerkleProof',
+    inputs: [
+      {
+        name: 'root',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'InvalidReleasedAmount',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidSignature',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidStrategies',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NewOwnerIsZeroAddress',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NoHandoverRequest',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotActive',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'TransferFailed',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'Unauthorized',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'WithdrawFailed',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'ZeroAddress',
+    inputs: [],
+  },
+] as const;
