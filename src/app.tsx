@@ -21,6 +21,11 @@ const App: Component<{ children: Element }> = (props) => {
             </A>
           </li>
           <li class="py-2 px-4">
+            <A href="/rpc" class="no-underline hover:underline">
+              RPC
+            </A>
+          </li>
+          <li class="py-2 px-4">
             <A href="/error" class="no-underline hover:underline">
               Error
             </A>
