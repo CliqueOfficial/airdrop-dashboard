@@ -6,7 +6,7 @@ import { BsCheck2Circle } from 'solid-icons/bs';
 import { VsWarning } from 'solid-icons/vs';
 import { defineChain, http } from 'viem';
 import { createConfig, getPublicClient } from '@wagmi/core';
-import { FaSolidSpinner } from 'solid-icons/fa';
+import { ImSpinner8 } from 'solid-icons/im';
 
 interface Relayer {
   address: string;
@@ -849,7 +849,7 @@ export default function DeploymentStep(props: DeploymentStepProps) {
                 <Show when={isDeploying() && deployStatus()}>
                   <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <div class="flex items-center gap-2 text-blue-800 text-sm">
-                      <FaSolidSpinner size={16} class="animate-spin" />
+                      <ImSpinner8 size={16} class="animate-spin" />
                       <span>{deployStatus()}</span>
                     </div>
                   </div>

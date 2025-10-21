@@ -1,6 +1,6 @@
 import { createSignal, createResource, For, Show } from 'solid-js';
 import { useConfig } from '../../hooks/useConfig';
-import { AppConf } from '../../hooks/useAppConf';
+import { AppConf } from '../../types';
 import { SetStoreFunction } from 'solid-js/store';
 
 interface Relayer {
@@ -55,7 +55,7 @@ interface RelayerStepProps {
 export default function RelayerStep(props: RelayerStepProps) {
   const { config } = useConfig();
   const [chainId, setChainId] = createSignal('');
-  const [online, setOnline] = createSignal(true);
+  const [online, setOnline] = createSignal(false);
   const [isCreating, setIsCreating] = createSignal(false);
   const [createError, setCreateError] = createSignal<string | null>(null);
   const [createSuccess, setCreateSuccess] = createSignal(false);

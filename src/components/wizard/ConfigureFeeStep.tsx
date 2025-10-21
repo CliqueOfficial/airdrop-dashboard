@@ -1,4 +1,4 @@
-import { Accessor, createResource, createSignal, For, Resource, Show, Suspense } from 'solid-js';
+import { createResource, createSignal, For, Show, Suspense } from 'solid-js';
 import { AppConf, Deployment } from '../../types';
 import TabView from '../TabView';
 import { useConfig } from '../../hooks/useConfig';

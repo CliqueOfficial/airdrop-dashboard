@@ -1,5 +1,7 @@
-import { AppConf } from '../../hooks/useAppConf';
-import { SetStoreFunction } from 'solid-js/store';
+import { Accessor, createEffect, createSignal } from 'solid-js';
+import { AppConf } from '../../types';
+import { SetStoreFunction, unwrap } from 'solid-js/store';
+import { useSearchParams } from '@solidjs/router';
 
 interface BasicStepProps {
   appConf: AppConf;
@@ -7,6 +9,8 @@ interface BasicStepProps {
 }
 
 export default function BasicStep(props: BasicStepProps) {
+  const [searchParams, setSerachParams] = useSearchParams<{ appId?: string }>();
+
   return (
     <div class="space-y-6">
       {/* App ID */}
@@ -16,6 +20,7 @@ export default function BasicStep(props: BasicStepProps) {
         </label>
         <input
           type="text"
+          disabled={!!searchParams.appId}
           value={props.appConf.appId}
           onInput={(e) => props.setAppConf('appId', e.currentTarget.value)}
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

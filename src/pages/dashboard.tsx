@@ -17,17 +17,9 @@ export default function Dashboard() {
 
   const { appConf, deployments, refetch } = useAppConf(() => appId);
 
-  // Persisted signal to track in-progress app ID (same as wizard)
-  const [wizardInProgressAppId, setWizardInProgressAppId] = makePersisted(createSignal(''), {
-    name: 'wizard-in-progress-app-id',
-    storage: localStorage,
-  });
-
   const handleEdit = () => {
-    // Set the wizard in-progress app ID to current appId
-    setWizardInProgressAppId(appId || '');
     // Navigate to wizard
-    navigate('/wizard');
+    navigate(`/wizard?appId=${appId}`);
   };
 
   const tabs = [

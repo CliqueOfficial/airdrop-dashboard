@@ -1,4 +1,12 @@
-import { createSignal, For, onMount, onCleanup, createEffect, createResource } from 'solid-js';
+import {
+  createSignal,
+  For,
+  onMount,
+  onCleanup,
+  createEffect,
+  createResource,
+  Show,
+} from 'solid-js';
 import BasicStep from '../components/wizard/BasicStep';
 import DeploymentStep from '../components/wizard/DeploymentStep';
 import RelayerStep from '../components/wizard/RelayerStep';
@@ -10,49 +18,62 @@ import ConfigureFeeStep from '../components/wizard/ConfigureFeeStep';
 import { createStore } from 'solid-js/store';
 import { AppConf } from '../types';
 import { useConfig } from '../hooks/useConfig';
-import { useNavigate } from '@solidjs/router';
+import { useNavigate, useSearchParams } from '@solidjs/router';
 import { makePersisted } from '@solid-primitives/storage';
+import { ImSpinner8 } from 'solid-icons/im';
+import { BsX } from 'solid-icons/bs';
 
 const STEPS = [
   {
     name: 'Basic',
     title: 'Basic Information',
     description: 'Set up basic configuration',
+    validate: (appConf: AppConf) => /^[a-zA-Z0-9_-]+$/.test(appConf.appId),
   },
   {
     name: 'Relayer',
     title: 'Relayer Settings',
     description: 'Configure relayer options',
+    validate: (appConf: AppConf) => true,
   },
   {
     name: 'Upload Batch',
     title: 'Upload Batch',
     description: 'Upload recipient addresses and amounts',
+    validate: (appConf: AppConf) => true,
   },
   {
     name: 'Deployment',
     title: 'Deployment Settings',
     description: 'Configure deployment options',
+    validate: (appConf: AppConf) =>
+      Object.values(appConf.deployments).every(
+        (deployment) => !!(deployment.chainId && deployment.rpcUrl)
+      ),
   },
   {
     name: 'Hooks',
     title: 'Hooks Configuration',
     description: 'Configure hooks for your deployments',
+    validate: (appConf: AppConf) => true,
   },
   {
     name: 'Strategy',
     title: 'Distribution Strategy',
     description: 'Configure token distribution strategy',
+    validate: (appConf: AppConf) => true,
   },
   {
     name: 'Apply Strategy',
     title: 'Apply Strategy to Batch',
     description: 'Bind batch roots to configurations',
+    validate: (appConf: AppConf) => true,
   },
   {
     name: 'Configure Fee',
     title: 'Configure Fee',
     description: 'Configure fee settings for your airdrop',
+    validate: (appConf: AppConf) => true,
   },
 ];
 
@@ -60,11 +81,7 @@ export default function Wizard() {
   const { config } = useConfig();
   const navigate = useNavigate();
 
-  // Persisted signal to track in-progress app ID
-  const [wizardInProgressAppId, setWizardInProgressAppId] = makePersisted(createSignal(''), {
-    name: 'wizard-in-progress-app-id',
-    storage: localStorage,
-  });
+  const [searchParams, setSerachParams] = useSearchParams<{ appId?: string }>();
 
   const [appConf, setAppConf] = createStore<AppConf>({
     appId: '',
@@ -87,7 +104,7 @@ export default function Wizard() {
 
   // Auto-load in-progress app conf from remote using createResource
   const [inProgressData, { refetch }] = createResource(
-    () => wizardInProgressAppId(),
+    () => searchParams.appId,
     async (inProgressAppId) => {
       if (!inProgressAppId) return null;
 
@@ -131,7 +148,7 @@ export default function Wizard() {
       } else if (response.status === 404) {
         // App was deleted or doesn't exist, clear the persisted value
         console.log('In-progress app not found, clearing persisted value');
-        setWizardInProgressAppId('');
+        setSerachParams({ appId: undefined });
         return null;
       }
 
@@ -165,6 +182,13 @@ export default function Wizard() {
     if (!appConf.appId) {
       setSaveError('App ID is required');
       return false;
+    }
+
+    for (const step of STEPS) {
+      if (!step.validate(appConf)) {
+        setSaveError(`${step.title} is not valid`);
+        return false;
+      }
     }
 
     setIsSaving(true);
@@ -213,9 +237,10 @@ export default function Wizard() {
     if (saved && !isLastStep()) {
       // Persist app ID after first step
       if (currentStep() === 0 && appConf.appId) {
-        setWizardInProgressAppId(appConf.appId);
+        setSerachParams({ appId: appConf.appId });
         console.log('Saved in-progress app ID:', appConf.appId);
       }
+
       setCurrentStep(currentStep() + 1);
     }
   };
@@ -224,7 +249,7 @@ export default function Wizard() {
     const saved = await saveAppConf();
     if (saved) {
       // Clear in-progress app ID
-      setWizardInProgressAppId('');
+      setSerachParams({ appId: undefined });
       console.log('Cleared in-progress app ID');
       // Navigate to home or new page after successful save
       navigate('/home');
@@ -250,21 +275,7 @@ export default function Wizard() {
         {inProgressData.loading && (
           <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div class="flex items-center gap-2 text-blue-800">
-              <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
+              <ImSpinner8 size={20} class="animate-spin" />
               <span class="font-medium">Loading in-progress configuration...</span>
             </div>
           </div>
@@ -404,8 +415,7 @@ export default function Wizard() {
           </div>
         </div>
 
-        {/* Success Message */}
-        {saveSuccess() && (
+        <Show when={saveSuccess()}>
           <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
             <div class="flex items-center gap-2 text-green-800">
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -418,10 +428,9 @@ export default function Wizard() {
               <span class="font-medium">Configuration saved successfully!</span>
             </div>
           </div>
-        )}
+        </Show>
 
-        {/* Error Message */}
-        {saveError() && (
+        <Show when={saveError()}>
           <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div class="flex items-center gap-2 text-red-800">
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -434,7 +443,7 @@ export default function Wizard() {
               <span class="font-medium">{saveError()}</span>
             </div>
           </div>
-        )}
+        </Show>
 
         {/* Navigation Buttons */}
         <div class="flex justify-between">
@@ -458,32 +467,16 @@ export default function Wizard() {
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
           >
-            {isSaving() ? (
-              <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-            ) : isLastStep() ? (
-              'Finish'
-            ) : (
-              'Next'
-            )}
+            <Show when={!isSaving()} fallback={<ImSpinner8 size={20} class="animate-spin" />}>
+              <Show when={isLastStep()} fallback={<span>Next</span>}>
+                <span>Finish</span>
+              </Show>
+            </Show>
           </button>
         </div>
 
         {/* Debug Panel - Toggle with Ctrl+Shift+H */}
-        {showDebug() && (
+        <Show when={showDebug()}>
           <div class="mt-8 bg-gray-900 rounded-lg shadow-lg p-6">
             <div class="flex justify-between items-center mb-3">
               <div>
@@ -494,16 +487,9 @@ export default function Wizard() {
               </div>
               <button
                 onClick={() => setShowDebug(false)}
-                class="text-gray-400 hover:text-white transition-colors"
+                class="text-gray-400 hover:text-white transition-colors cursor-pointer"
               >
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <BsX size={20} />
               </button>
             </div>
             <textarea
@@ -516,7 +502,7 @@ export default function Wizard() {
               Press Ctrl+Shift+H to toggle this debug panel
             </p>
           </div>
-        )}
+        </Show>
       </div>
     </section>
   );
