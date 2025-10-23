@@ -1,7 +1,7 @@
 import { createResource, createSignal, Show, Suspense } from 'solid-js';
 import { type AppConf, type Deployment } from '../../types';
 import { createPublicClient } from '../../util';
-import DistributorAbi from '../../abi/Distributor.abi';
+import DistributorAbi from '../../abi/Distributor';
 import { parseAbi, parseAbiItem, formatEther } from 'viem';
 
 interface DeploymentProps {

@@ -3,7 +3,7 @@ import { AppConf, Deployment } from '../../types';
 import TabView from '../TabView';
 import { useConfig } from '../../hooks/useConfig';
 import { createPublicClient } from '../../util';
-import DistributorAbi from '../../abi/Distributor.abi';
+import DistributorAbi from '../../abi/Distributor';
 import { keccak256, PublicClient, toBytes } from 'viem';
 
 interface ConfigureFeeStepProps {

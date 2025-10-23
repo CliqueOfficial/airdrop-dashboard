@@ -1143,11 +1143,6 @@ export default [
   },
   {
     type: 'error',
-    name: 'DefaultFeeNotSet',
-    inputs: [],
-  },
-  {
-    type: 'error',
     name: 'HandlerMismatch',
     inputs: [
       {
@@ -1225,7 +1220,7 @@ export default [
   },
   {
     type: 'error',
-    name: 'TransferFailed',
+    name: 'ProportionOverflow',
     inputs: [],
   },
   {

@@ -7,7 +7,7 @@ import { FiSettings } from 'solid-icons/fi';
 import { FaSolidPlus } from 'solid-icons/fa';
 import { keccak256, toBytes } from 'viem';
 import { useConfig } from '../../hooks/useConfig';
-import DistributorAbi from '../../abi/Distributor.abi';
+import DistributorAbi from '../../abi/Distributor';
 import { createPublicClient } from '../../util';
 import TabView from '../TabView';
 
