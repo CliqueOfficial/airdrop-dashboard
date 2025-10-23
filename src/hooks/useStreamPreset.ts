@@ -75,7 +75,7 @@ const callSetPresetApi = async (
       appId,
       deployment,
       deployer,
-      configurationId,
+      preset: configurationId,
       startTime: preset.startTime.toString(),
       cliffDuration: preset.cliffDuration.toString(),
       vestingDuration: preset.vestingDuration.toString(),

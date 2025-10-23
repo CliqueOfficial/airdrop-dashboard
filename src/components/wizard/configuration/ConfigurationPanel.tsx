@@ -13,13 +13,11 @@ import {
 } from 'solid-js';
 import { Configuration, Strategy } from '../../../types';
 import TransferHookPanel from './hook/TransferHookPanel';
-import LockHookPanel from './hook/LockHookPanelProps';
+import LockHookPanel from './hook/LockHookPanel';
 import { DeploymentContext } from '../../../hooks/context/Deployment';
 import { useConfiguration } from '../../../hooks/useConfiguration';
 import EditableListView from '../../EditableListView';
-import { createStore, unwrap } from 'solid-js/store';
 import { parseEther } from 'viem';
-import { BsCheck } from 'solid-icons/bs';
 import { TiWarningOutline } from 'solid-icons/ti';
 import { AiTwotoneCheckCircle } from 'solid-icons/ai';
 import Spin from '../../Spin';
