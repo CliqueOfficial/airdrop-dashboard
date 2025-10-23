@@ -6,6 +6,7 @@ import {
   createResource,
   Accessor,
   useContext,
+  createEffect,
 } from 'solid-js';
 import type { AppConf, Configuration, Deployment, Strategy } from '../../types';
 import { SetStoreFunction, createStore, produce } from 'solid-js/store';
@@ -101,41 +102,33 @@ function DeploymentStrategyPanel(props: DeploymentStrategyPanelProps) {
     props.deployment.extra.configurations
   );
 
-  const configurationNames = createMemo(() => Object.keys(configurations));
-
   return (
     <EditableListView
-      items={configurationNames()}
+      items={Object.entries(configurations)}
       createView={(onItemCreated, onCancel) => (
-        <ConfigurationCreateView
-          onItemCreated={(name) => {
-            setConfigurations(name, {
-              strategy: [],
-              fallbackIdx: '0',
-              deployed: false,
-            });
-            onItemCreated(name);
-          }}
-          onCancel={onCancel}
-        />
+        <ConfigurationCreateView onItemCreated={onItemCreated} onCancel={onCancel} />
       )}
       onItemsChange={(items) => {
         console.log(JSON.stringify(items, null, 2));
       }}
     >
-      {(name) => (
-        <ConfigurationPanel
-          name={() => name}
-          configuration={() => configurations[name]}
-          setConfiguration={(configuration) => setConfigurations(name, configuration)}
-        />
+      {([name, configuration]) => (
+        <Show when={configuration}>
+          <ConfigurationPanel
+            name={name}
+            configuration={configuration}
+            setConfiguration={(configuration) => {
+              setConfigurations(name, configuration);
+            }}
+          />
+        </Show>
       )}
     </EditableListView>
   );
 }
 
 interface ConfigurationCreateViewProps {
-  onItemCreated: (item: string) => void;
+  onItemCreated: (item: [string, Configuration]) => void;
   onCancel: () => void;
 }
 
@@ -145,7 +138,14 @@ function ConfigurationCreateView(props: ConfigurationCreateViewProps) {
   const handleConfirm = () => {
     const name = configurationName().trim();
     if (name) {
-      props.onItemCreated(name);
+      props.onItemCreated([
+        name,
+        {
+          strategy: [],
+          fallbackIdx: '0',
+          deployed: false,
+        },
+      ]);
       setConfigurationName('');
     }
   };

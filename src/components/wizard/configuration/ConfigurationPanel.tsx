@@ -1,4 +1,16 @@
-import { Accessor, createEffect, createMemo, createSignal, For, Show, useContext } from 'solid-js';
+import {
+  Accessor,
+  createEffect,
+  createMemo,
+  createResource,
+  createSignal,
+  For,
+  Match,
+  Show,
+  Suspense,
+  Switch,
+  useContext,
+} from 'solid-js';
 import { Configuration, Strategy } from '../../../types';
 import TransferHookPanel from './hook/TransferHookPanel';
 import LockHookPanel from './hook/LockHookPanelProps';
@@ -7,10 +19,14 @@ import { useConfiguration } from '../../../hooks/useConfiguration';
 import EditableListView from '../../EditableListView';
 import { createStore, unwrap } from 'solid-js/store';
 import { parseEther } from 'viem';
+import { BsCheck } from 'solid-icons/bs';
+import { TiWarningOutline } from 'solid-icons/ti';
+import { AiTwotoneCheckCircle } from 'solid-icons/ai';
+import Spin from '../../Spin';
 
 interface ConfigurationPanelProps {
-  name: Accessor<string>;
-  configuration: Accessor<Configuration>;
+  name: string;
+  configuration: Configuration;
   setConfiguration: (configuration: Configuration) => void;
 }
 
@@ -32,7 +48,7 @@ export default function ConfigurationPanel({
 
   const { data, update, refetch } = useConfiguration({
     contractAddress: () => context.roles()['contract'],
-    configurationName: () => name(),
+    configurationName: () => name,
     hookReverseMap: hookReverseMap,
     chainId: () => BigInt(context.chainId()),
     rpcUrl: context.rpcUrl,
@@ -41,18 +57,70 @@ export default function ConfigurationPanel({
     projectAdmin: () => context.roles()['projectAdmin'],
   });
 
-  createEffect(() => {
-    console.log('name', name());
-    console.log('configuration', configuration());
-    console.log('availableHooks', availableHooks());
-  });
+  const isSynced = (data: Configuration | undefined) => {
+    if (!data) return false;
+    const fallbackIdxSynced = data.fallbackIdx === configuration.fallbackIdx;
+    const strategiesLengthSynced = data.strategy.length === configuration.strategy.length;
+    const strategiesSynced = data.strategy.every((strategy, index) => {
+      const localStrategy = configuration.strategy[index];
+      const hookSynced = strategy.hook === localStrategy?.hook;
+      const parsedProportion = (parseEther(localStrategy?.proportion || '0') / 100n).toString();
+      const proportionSynced = strategy.proportion === parsedProportion;
+      return hookSynced && proportionSynced;
+    });
+    return fallbackIdxSynced && strategiesLengthSynced && strategiesSynced;
+  };
 
-  const [fallbackIdx, setFallbackIdx] = createSignal(configuration()?.fallbackIdx || '0');
+  const [fallbackIdx, setFallbackIdx] = createSignal(configuration.fallbackIdx || '0');
 
   return (
     <EditableListView
-      title={name()}
-      items={configuration()?.strategy || []}
+      title={
+        <div class="flex items-center justify-between w-full">
+          <div class="flex items-center gap-2">
+            <Suspense fallback={<Spin size={14} />}>
+              <Show
+                when={!!isSynced(data())}
+                fallback={
+                  <span
+                    class="text-amber-600 cursor-help flex items-center"
+                    title="Configuration is not synced - deployment required"
+                  >
+                    <TiWarningOutline size={14} />
+                  </span>
+                }
+              >
+                <span
+                  class="text-green-600 cursor-help flex items-center"
+                  title="Configuration is synced with on-chain state"
+                >
+                  <AiTwotoneCheckCircle size={14} />
+                </span>
+              </Show>
+            </Suspense>
+            <span class="text-lg font-semibold text-gray-900">{name}</span>
+          </div>
+          {/*TODO: disable when editing. Allow `title` to pass a function (isEditing: boolean) => JSX.Element */}
+          <Suspense>
+            <Show when={!isSynced(data())}>
+              <button
+                onClick={() => {
+                  update({
+                    strategy: configuration.strategy || [],
+                    fallbackIdx: fallbackIdx(),
+                    deployed: true,
+                  });
+                  refetch();
+                }}
+                class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors shadow-sm"
+              >
+                Deploy
+              </button>
+            </Show>
+          </Suspense>
+        </div>
+      }
+      items={configuration.strategy || []}
       canAdd={availableHooks().length > 0}
       createView={(onItemCreated, onCancel) => (
         <StrategyCreateView
@@ -62,11 +130,15 @@ export default function ConfigurationPanel({
         />
       )}
       onItemsChange={(items) => {
-        setConfiguration({
+        console.log('=== onItemsChange called ===');
+        console.log('items:', items);
+        const newConfig = {
           strategy: items,
           fallbackIdx: fallbackIdx(),
           deployed: false,
-        });
+        };
+        console.log('calling setConfiguration with:', newConfig);
+        setConfiguration(newConfig);
       }}
     >
       {(item, index, isEditing, updateItem) => (
@@ -125,17 +197,22 @@ export default function ConfigurationPanel({
             </div>
           }
         >
-          <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-md">
-            <div class="flex-1">
-              <span class="font-medium text-gray-700">{item.hook}</span>
-            </div>
-            <div class="text-sm text-gray-600">
-              Proportion: <span class="font-semibold">{item.proportion}</span>
-            </div>
-            <Show when={fallbackIdx() === index.toString()}>
-              <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Fallback</span>
-            </Show>
-          </div>
+          <Switch>
+            <Match when={item.hook === 'transferHook'}>
+              <TransferHookPanel
+                proportion={item.proportion}
+                isFallback={fallbackIdx() === index.toString()}
+              />
+            </Match>
+            <Match when={item.hook === 'lockHook'}>
+              <LockHookPanel
+                proportion={item.proportion}
+                strategy={name}
+                isFallback={fallbackIdx() === index.toString()}
+                isFixedStart={false}
+              />
+            </Match>
+          </Switch>
         </Show>
       )}
     </EditableListView>

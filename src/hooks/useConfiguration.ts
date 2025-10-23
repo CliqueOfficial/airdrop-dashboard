@@ -1,9 +1,10 @@
-import { type Accessor, createMemo, createResource } from 'solid-js';
-import { keccak256, type PublicClient, type TransactionReceipt, toBytes } from 'viem';
+import { type Accessor, createMemo, createResource, useContext } from 'solid-js';
+import { keccak256, type PublicClient, type TransactionReceipt, toBytes, parseEther } from 'viem';
 import { Configuration } from '../types';
 import DistributorAbi from '../abi/Distributor';
 import { useConfig } from './useConfig';
 import { createPublicClient } from '../util';
+import { DeploymentContext } from './context/Deployment';
 
 interface UseConfigurationProps {
   contractAddress: Accessor<`0x${string}`>;
@@ -32,7 +33,7 @@ const fetchConfiguration = async (
 
   return {
     strategy: strategy.strategies.map((strategy) => ({
-      hook: hookReverseMap[strategy.hook],
+      hook: hookReverseMap[strategy.hook.toLowerCase() as `0x${string}`],
       proportion: strategy.proportion.toString(),
     })),
     fallbackIdx: strategy.fallbackHook.toString(),
@@ -84,6 +85,7 @@ export const useConfiguration = ({
   projectAdmin,
 }: UseConfigurationProps) => {
   const { config } = useConfig();
+  const { roles } = useContext(DeploymentContext)!;
   const client = createMemo(() => createPublicClient(chainId().toString(), rpcUrl()));
 
   // Read configuration from chain
@@ -107,14 +109,29 @@ export const useConfiguration = ({
         hookReverseMap: hookReverseMap(),
       };
     },
-    ({ client, contractAddress, configurationName, hookReverseMap }) =>
-      fetchConfiguration(client, contractAddress, configurationName, hookReverseMap)
+    async (
+      { client, contractAddress, configurationName, hookReverseMap },
+      { value, refetching }
+    ): Promise<Configuration> => {
+      console.log('refetching', refetching);
+      console.log('value', JSON.stringify(value, null, 2));
+      return fetchConfiguration(client, contractAddress, configurationName, hookReverseMap);
+    }
   );
 
   // Update configuration
   const update = async (configuration: Configuration): Promise<TransactionReceipt> => {
     const currentClient = client();
     if (!currentClient) throw new Error('Client not initialized');
+
+    const applyingConfiguration = {
+      strategy: configuration.strategy.map((strategy) => ({
+        hook: roles()[strategy.hook] as `0x${string}`, // convert name to address
+        proportion: (parseEther(strategy.proportion) / 100n).toString(), // convert percentage to fixed point
+      })),
+      fallbackIdx: configuration.fallbackIdx,
+      deployed: false, // It doesn't matter
+    };
 
     // Call API to submit transaction
     const txHash = await callApplyConfiguration(
@@ -124,7 +141,7 @@ export const useConfiguration = ({
       deployment(),
       projectAdmin(),
       configurationName(),
-      configuration
+      applyingConfiguration
     );
 
     // Wait for confirmation

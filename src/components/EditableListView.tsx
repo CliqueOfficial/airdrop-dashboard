@@ -3,7 +3,7 @@ import { createStore, unwrap } from 'solid-js/store';
 import { BsCheck, BsPencil, BsPlus, BsTrash, BsX } from 'solid-icons/bs';
 
 interface EditableListViewProps<T> {
-  title?: string;
+  title?: JSX.Element;
   items: T[];
   class?: string;
   onItemsChange?: (items: T[]) => void;
@@ -25,7 +25,7 @@ export default function EditableListView<T>(props: EditableListViewProps<T>) {
   const [items, setItems] = createStore<T[]>(props.items);
 
   // Temporary editing store - initialized with unwrapped values
-  const [tempItems, setTempItems] = createStore<T[]>(unwrap(items));
+  const [tempItems, setTempItems] = createStore<T[]>(structuredClone(unwrap(props.items)));
 
   const [isEditing, setIsEditing] = createSignal(false);
   const [isCreating, setIsCreating] = createSignal(false);
@@ -34,7 +34,7 @@ export default function EditableListView<T>(props: EditableListViewProps<T>) {
   createEffect(() => {
     if (!isEditing()) {
       setItems(props.items);
-      setTempItems(unwrap(props.items));
+      setTempItems(structuredClone(unwrap(props.items)));
     }
   });
 
@@ -43,15 +43,15 @@ export default function EditableListView<T>(props: EditableListViewProps<T>) {
     if (props.validateItems && !props.validateItems(tempItems)) {
       return;
     }
-    setItems(unwrap(tempItems));
-    props.onItemsChange?.(unwrap(tempItems));
+    setItems(structuredClone(unwrap(tempItems)));
+    props.onItemsChange?.(tempItems);
     setIsEditing(false);
     setIsCreating(false);
   };
 
   // Cancel changes - reset temp state to main store values
   const handleCancel = () => {
-    setTempItems(unwrap(items));
+    setTempItems(structuredClone(unwrap(items)));
     setIsEditing(false);
     setIsCreating(false);
   };

@@ -1,4 +1,4 @@
-import { createMemo } from 'solid-js';
+import { createMemo, Suspense } from 'solid-js';
 import { Show } from 'solid-js';
 import { BsLock, BsCalendar, BsLightning, BsClock, BsArrowRepeat, BsUnlock } from 'solid-icons/bs';
 import { useContext } from 'solid-js';
@@ -7,6 +7,7 @@ import { createSignal } from 'solid-js';
 import { useStreamPreset } from '../../../../hooks/useStreamPreset';
 import { keccak256, toBytes } from 'viem';
 import HookPanelHeader from './HookPanelHeader';
+import Spin from '../../../Spin';
 
 interface LockHookPanelProps {
   proportion: string;
@@ -73,81 +74,86 @@ export default function LockHookPanel(props: LockHookPanelProps) {
 
       {/* Vesting Configuration Details */}
       <div class="p-4 bg-white bg-opacity-50">
-        {/* Start Time - Full width */}
-        <Show when={streamPreset()}>
-          {(preset) => (
-            <>
-              <div class="bg-white rounded-lg p-3 border border-purple-100 mb-4">
-                <div class="flex items-center gap-2 mb-1">
-                  <BsCalendar class="text-purple-500" size={16} />
-                  <span class="text-xs font-medium text-gray-500">Start Time</span>
-                </div>
-                <div class="text-lg font-bold text-gray-900">
-                  {formatTimestamp(Number(preset().startTime))}
-                </div>
+        <div class="bg-white rounded-lg p-3 border border-purple-100 mb-4">
+          <div class="flex items-center gap-2 mb-1">
+            <BsCalendar class="text-purple-500" size={16} />
+            <span class="text-xs font-medium text-gray-500">Start Time</span>
+          </div>
+          <Suspense fallback={<Spin size={14} />}>
+            <div class="text-lg font-bold text-gray-900">
+              {formatTimestamp(Number(streamPreset()?.startTime))}
+            </div>
+          </Suspense>
+        </div>
+
+        {/* Duration Grid */}
+        <div class="grid grid-cols-3 gap-4">
+          {/* Cliff Duration */}
+          <div class="bg-white rounded-lg p-3 border border-purple-100">
+            <div class="flex items-center gap-2 mb-1">
+              <BsLightning class="text-purple-500" size={16} />
+              <span class="text-xs font-medium text-gray-500">Cliff Duration</span>
+            </div>
+            <Suspense fallback={<Spin size={14} />}>
+              <div class="text-lg font-bold text-gray-900">
+                {formatDuration(Number(streamPreset()?.cliffDuration))}
               </div>
+            </Suspense>
+          </div>
 
-              {/* Duration Grid */}
-              <div class="grid grid-cols-3 gap-4">
-                {/* Cliff Duration */}
-                <div class="bg-white rounded-lg p-3 border border-purple-100">
-                  <div class="flex items-center gap-2 mb-1">
-                    <BsLightning class="text-purple-500" size={16} />
-                    <span class="text-xs font-medium text-gray-500">Cliff Duration</span>
-                  </div>
-                  <div class="text-lg font-bold text-gray-900">
-                    {formatDuration(Number(preset().cliffDuration))}
-                  </div>
-                </div>
-
-                {/* Vesting Duration */}
-                <div class="bg-white rounded-lg p-3 border border-purple-100">
-                  <div class="flex items-center gap-2 mb-1">
-                    <BsClock class="text-purple-500" size={16} />
-                    <span class="text-xs font-medium text-gray-500">Vesting Duration</span>
-                  </div>
-                  <div class="text-lg font-bold text-gray-900">
-                    {formatDuration(Number(preset().vestingDuration))}
-                  </div>
-                </div>
-
-                {/* Piece Duration */}
-                <div class="bg-white rounded-lg p-3 border border-purple-100">
-                  <div class="flex items-center gap-2 mb-1">
-                    <BsArrowRepeat class="text-purple-500" size={16} />
-                    <span class="text-xs font-medium text-gray-500">Piece Duration</span>
-                  </div>
-                  <div class="text-lg font-bold text-gray-900">
-                    {formatDuration(Number(preset().pieceDuration))}
-                  </div>
-                </div>
+          {/* Vesting Duration */}
+          <div class="bg-white rounded-lg p-3 border border-purple-100">
+            <div class="flex items-center gap-2 mb-1">
+              <BsClock class="text-purple-500" size={16} />
+              <span class="text-xs font-medium text-gray-500">Vesting Duration</span>
+            </div>
+            <Suspense fallback={<Spin size={14} />}>
+              <div class="text-lg font-bold text-gray-900">
+                {formatDuration(Number(streamPreset()?.vestingDuration))}
               </div>
+            </Suspense>
+          </div>
 
-              {/* Unlock Percentages */}
-              <div class="grid grid-cols-2 gap-4 mt-4">
-                <div class="bg-white rounded-lg p-3 border border-purple-100">
-                  <div class="flex items-center gap-2 mb-1">
-                    <BsUnlock class="text-purple-500" size={16} />
-                    <span class="text-xs font-medium text-gray-500">Start Unlock</span>
-                  </div>
-                  <div class="text-lg font-bold text-purple-600">
-                    {formatPercentage(Number(preset().startUnlockPercentage))}
-                  </div>
-                </div>
-
-                <div class="bg-white rounded-lg p-3 border border-purple-100">
-                  <div class="flex items-center gap-2 mb-1">
-                    <BsUnlock class="text-purple-500" size={16} />
-                    <span class="text-xs font-medium text-gray-500">Cliff Unlock</span>
-                  </div>
-                  <div class="text-lg font-bold text-purple-600">
-                    {formatPercentage(Number(preset().cliffUnlockPercentage))}
-                  </div>
-                </div>
+          {/* Piece Duration */}
+          <div class="bg-white rounded-lg p-3 border border-purple-100">
+            <div class="flex items-center gap-2 mb-1">
+              <BsArrowRepeat class="text-purple-500" size={16} />
+              <span class="text-xs font-medium text-gray-500">Piece Duration</span>
+            </div>
+            <Suspense fallback={<Spin size={14} />}>
+              <div class="text-lg font-bold text-gray-900">
+                {formatDuration(Number(streamPreset()?.pieceDuration))}
               </div>
-            </>
-          )}
-        </Show>
+            </Suspense>
+          </div>
+        </div>
+
+        {/* Unlock Percentages */}
+        <div class="grid grid-cols-2 gap-4 mt-4">
+          <div class="bg-white rounded-lg p-3 border border-purple-100">
+            <div class="flex items-center gap-2 mb-1">
+              <BsUnlock class="text-purple-500" size={16} />
+              <span class="text-xs font-medium text-gray-500">Start Unlock</span>
+            </div>
+            <Suspense fallback={<Spin size={14} />}>
+              <div class="text-lg font-bold text-purple-600">
+                {formatPercentage(Number(streamPreset()?.startUnlockPercentage))}
+              </div>
+            </Suspense>
+          </div>
+
+          <div class="bg-white rounded-lg p-3 border border-purple-100">
+            <div class="flex items-center gap-2 mb-1">
+              <BsUnlock class="text-purple-500" size={16} />
+              <span class="text-xs font-medium text-gray-500">Cliff Unlock</span>
+            </div>
+            <Suspense fallback={<Spin size={14} />}>
+              <div class="text-lg font-bold text-purple-600">
+                {formatPercentage(Number(streamPreset()?.cliffUnlockPercentage))}
+              </div>
+            </Suspense>
+          </div>
+        </div>
       </div>
     </div>
   );
