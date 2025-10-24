@@ -17,7 +17,7 @@ import LockHookPanel from './hook/LockHookPanel';
 import { DeploymentContext } from '../../../hooks/context/Deployment';
 import { useConfiguration } from '../../../hooks/useConfiguration';
 import EditableListView from '../../EditableListView';
-import { parseEther } from 'viem';
+import { formatEther, formatUnits, parseEther, parseUnits } from 'viem';
 import { TiWarningOutline } from 'solid-icons/ti';
 import { AiTwotoneCheckCircle } from 'solid-icons/ai';
 import Spin from '../../Spin';
@@ -62,12 +62,17 @@ export default function ConfigurationPanel({
     const strategiesSynced = data.strategy.every((strategy, index) => {
       const localStrategy = configuration.strategy[index];
       const hookSynced = strategy.hook === localStrategy?.hook;
-      const parsedProportion = (parseEther(localStrategy?.proportion || '0') / 100n).toString();
-      const proportionSynced = strategy.proportion === parsedProportion;
+      const proportionSynced = strategy.proportion === localStrategy?.proportion;
       return hookSynced && proportionSynced;
     });
     return fallbackIdxSynced && strategiesLengthSynced && strategiesSynced;
   };
+
+  createEffect(() => {
+    console.log('=== configuration changed ===');
+    console.log(`${name} configuration:`, JSON.stringify(configuration, null, 2));
+    console.log(`${name} data:`, JSON.stringify(data(), null, 2));
+  });
 
   const [fallbackIdx, setFallbackIdx] = createSignal(configuration.fallbackIdx || '0');
   const [isDeploying, setIsDeploying] = createSignal(false);
@@ -189,14 +194,18 @@ export default function ConfigurationPanel({
               <div class="flex flex-col gap-2">
                 <div class="flex justify-between items-center">
                   <label class="text-sm font-medium text-gray-700">Proportion</label>
-                  <span class="text-sm text-gray-600 font-semibold">{item.proportion}</span>
+                  <span class="text-sm text-gray-600 font-semibold">
+                    {formatUnits(BigInt(item.proportion), 16)}
+                  </span>
                 </div>
                 <input
                   type="range"
                   min="0"
                   max="100"
-                  value={item.proportion}
-                  onInput={(e) => updateItem({ proportion: e.currentTarget.value })}
+                  value={formatUnits(BigInt(item.proportion), 16)}
+                  onInput={(e) =>
+                    updateItem({ proportion: parseUnits(e.currentTarget.value, 16).toString() })
+                  }
                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                 />
                 <div class="flex justify-between text-xs text-gray-500">

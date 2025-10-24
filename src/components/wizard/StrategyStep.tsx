@@ -15,36 +15,6 @@ import { DeploymentContext } from '../../hooks/context/Deployment';
 import ConfigurationPanel from './configuration/ConfigurationPanel';
 import EditableListView from '../EditableListView';
 
-const applyConfiguration = async (
-  baseUrl: string,
-  apiKey: string,
-  appId: string,
-  deployment: string,
-  projectAdmin: string,
-  name: string,
-  configuration: Configuration
-) => {
-  const response = await fetch(`${baseUrl}/admin/relay/distributor/set-hook`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-    },
-    body: JSON.stringify({
-      appId,
-      deployment,
-      projectAdmin,
-      hookName: name,
-      strategy: configuration.strategy,
-      fallbackIdx: configuration.fallbackIdx,
-    }),
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to apply configuration`);
-  }
-  return response.json() as Promise<{ txHash: string }>;
-};
-
 interface StrategyStepProps {
   appConf: AppConf;
   setAppConf: SetStoreFunction<AppConf>;
