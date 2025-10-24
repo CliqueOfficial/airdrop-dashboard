@@ -11,6 +11,8 @@ export interface StreamPreset {
   startUnlockPercentage: bigint;
   cliffUnlockPercentage: bigint;
   pieceDuration: bigint;
+  lock: `0x${string}`;
+  isFixedStart: boolean;
 }
 
 interface UseStreamPresetProps {
@@ -38,6 +40,8 @@ const fetchStreamPreset = async (
     startUnlockPercentage,
     cliffUnlockPercentage,
     pieceDuration,
+    lock,
+    isFixedStart,
   ] = await client.readContract({
     address: contractAddress,
     abi: CliqueLockHookAbi,
@@ -52,6 +56,8 @@ const fetchStreamPreset = async (
     startUnlockPercentage,
     cliffUnlockPercentage,
     pieceDuration,
+    lock,
+    isFixedStart,
   };
 };
 
@@ -82,6 +88,8 @@ const callSetPresetApi = async (
       startUnlockPercentage: preset.startUnlockPercentage.toString(),
       cliffUnlockPercentage: preset.cliffUnlockPercentage.toString(),
       pieceDuration: preset.pieceDuration.toString(),
+      lock: preset.lock,
+      isFixedStart: preset.isFixedStart,
     }),
   });
 

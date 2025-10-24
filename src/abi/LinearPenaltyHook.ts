@@ -26,29 +26,6 @@ export default [
   },
   {
     type: 'function',
-    name: 'claim',
-    inputs: [
-      {
-        name: '_distributor',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: '_root',
-        type: 'bytes32',
-        internalType: 'bytes32',
-      },
-      {
-        name: '_recipient',
-        type: 'address',
-        internalType: 'address',
-      },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
     name: 'completeOwnershipHandover',
     inputs: [
       {
@@ -65,7 +42,7 @@ export default [
     name: 'execute',
     inputs: [
       {
-        name: '_vault',
+        name: '',
         type: 'address',
         internalType: 'address',
       },
@@ -75,7 +52,7 @@ export default [
         internalType: 'address',
       },
       {
-        name: '_root',
+        name: '_configurationId',
         type: 'bytes32',
         internalType: 'bytes32',
       },
@@ -199,6 +176,30 @@ export default [
   },
   {
     type: 'function',
+    name: 'penaltyConfigs',
+    inputs: [
+      {
+        name: 'configurationId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    outputs: [
+      {
+        name: 'beginTime',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: 'endTime',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'renounceOwnership',
     inputs: [],
     outputs: [],
@@ -263,156 +264,33 @@ export default [
   },
   {
     type: 'function',
-    name: 'setStreamPreset',
+    name: 'setPenaltyConfig',
     inputs: [
-      {
-        name: '_distributor',
-        type: 'address',
-        internalType: 'address',
-      },
       {
         name: '_configurationId',
         type: 'bytes32',
         internalType: 'bytes32',
       },
       {
-        name: '_streamPreset',
+        name: '_penaltyConfig',
         type: 'tuple',
-        internalType: 'struct StreamPreset',
+        internalType: 'struct PenaltyConfig',
         components: [
           {
-            name: 'startTime',
+            name: 'beginTime',
             type: 'uint256',
             internalType: 'uint256',
           },
           {
-            name: 'cliffDuration',
+            name: 'endTime',
             type: 'uint256',
             internalType: 'uint256',
-          },
-          {
-            name: 'vestingDuration',
-            type: 'uint256',
-            internalType: 'uint256',
-          },
-          {
-            name: 'startUnlockPercentage',
-            type: 'uint256',
-            internalType: 'uint256',
-          },
-          {
-            name: 'cliffUnlockPercentage',
-            type: 'uint256',
-            internalType: 'uint256',
-          },
-          {
-            name: 'pieceDuration',
-            type: 'uint256',
-            internalType: 'uint256',
-          },
-          {
-            name: 'lock',
-            type: 'address',
-            internalType: 'address',
-          },
-          {
-            name: 'isFixedStart',
-            type: 'bool',
-            internalType: 'bool',
           },
         ],
       },
     ],
     outputs: [],
     stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'streamIds',
-    inputs: [
-      {
-        name: '',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: '',
-        type: 'bytes32',
-        internalType: 'bytes32',
-      },
-      {
-        name: '',
-        type: 'address',
-        internalType: 'address',
-      },
-    ],
-    outputs: [
-      {
-        name: '',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'streamPresets',
-    inputs: [
-      {
-        name: '',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: 'configurationId',
-        type: 'bytes32',
-        internalType: 'bytes32',
-      },
-    ],
-    outputs: [
-      {
-        name: 'startTime',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-      {
-        name: 'cliffDuration',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-      {
-        name: 'vestingDuration',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-      {
-        name: 'startUnlockPercentage',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-      {
-        name: 'cliffUnlockPercentage',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-      {
-        name: 'pieceDuration',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-      {
-        name: 'lock',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: 'isFixedStart',
-        type: 'bool',
-        internalType: 'bool',
-      },
-    ],
-    stateMutability: 'view',
   },
   {
     type: 'function',
@@ -474,6 +352,56 @@ export default [
   },
   {
     type: 'event',
+    name: 'PenaltyApplied',
+    inputs: [
+      {
+        name: 'recipient',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'amount',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'PenaltyConfigSet',
+    inputs: [
+      {
+        name: 'configurationId',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'penaltyConfig',
+        type: 'tuple',
+        indexed: false,
+        internalType: 'struct PenaltyConfig',
+        components: [
+          {
+            name: 'beginTime',
+            type: 'uint256',
+            internalType: 'uint256',
+          },
+          {
+            name: 'endTime',
+            type: 'uint256',
+            internalType: 'uint256',
+          },
+        ],
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
     name: 'RolesUpdated',
     inputs: [
       {
@@ -492,23 +420,9 @@ export default [
     anonymous: false,
   },
   {
-    type: 'event',
-    name: 'StreamPresetSet',
-    inputs: [
-      {
-        name: 'distributor',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
-      },
-      {
-        name: 'configurationId',
-        type: 'bytes32',
-        indexed: true,
-        internalType: 'bytes32',
-      },
-    ],
-    anonymous: false,
+    type: 'error',
+    name: 'AllocationMismatch',
+    inputs: [],
   },
   {
     type: 'error',
@@ -517,7 +431,7 @@ export default [
   },
   {
     type: 'error',
-    name: 'InsufficientAllocation',
+    name: 'InvalidPenaltyConfig',
     inputs: [],
   },
   {
@@ -528,11 +442,6 @@ export default [
   {
     type: 'error',
     name: 'NoHandoverRequest',
-    inputs: [],
-  },
-  {
-    type: 'error',
-    name: 'StreamPresetNotFound',
     inputs: [],
   },
   {

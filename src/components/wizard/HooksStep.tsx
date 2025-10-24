@@ -49,9 +49,7 @@ const deployLockHook = async (
   apiKey: string,
   appId: string,
   deployment: string,
-  deployer: string,
-  lock: string,
-  isFixedStart: boolean
+  deployer: string
 ) => {
   const response = await fetch(`${baseUrl}/admin/relay/cliquelock-hook/deploy`, {
     method: 'POST',
@@ -59,7 +57,7 @@ const deployLockHook = async (
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
     },
-    body: JSON.stringify({ appId, deployment, deployer, lock, isFixedStart }),
+    body: JSON.stringify({ appId, deployment, deployer }),
   });
   if (!response.ok) {
     throw new Error(`Failed to deploy lock hook: ${response.statusText}`);
@@ -95,9 +93,6 @@ export default function HooksStep(props: HooksStepProps) {
   const [isDeploying, setIsDeploying] = createSignal(false);
   const [deployError, setDeployError] = createSignal<string | null>(null);
   const [deployingHookId, setDeployingHookId] = createSignal<string | null>(null);
-  const [showLockParams, setShowLockParams] = createSignal(false);
-  const [lockAddress, setLockAddress] = createSignal('');
-  const [isFixedStart, setIsFixedStart] = createSignal(false);
 
   const handleSelectHook = (hookId: string) => {
     setSelectedHook(hookId === selectedHook() ? null : hookId);
@@ -165,32 +160,7 @@ export default function HooksStep(props: HooksStepProps) {
   };
 
   const handleDeployButtonClick = (hookId: string) => {
-    if (hookId === 'lock') {
-      // Show parameter input form for lock hook
-      setShowLockParams(true);
-      setLockAddress('');
-      setIsFixedStart(false);
-      setDeployError(null);
-    } else {
-      // Deploy directly for other hooks
-      handleDeployHook(hookId);
-    }
-  };
-
-  const handleCancelLockParams = () => {
-    setShowLockParams(false);
-    setLockAddress('');
-    setIsFixedStart(false);
-    setDeployError(null);
-  };
-
-  const handleConfirmLockDeploy = () => {
-    if (!validateAddress(lockAddress())) {
-      setDeployError('Invalid lock address');
-      return;
-    }
-    setShowLockParams(false);
-    handleDeployHook('lock');
+    handleDeployHook(hookId);
   };
 
   const handleDeployHook = async (hookId: string) => {
@@ -230,21 +200,12 @@ export default function HooksStep(props: HooksStepProps) {
         );
         txHash = result.txHash;
       } else if (hookId === 'lock') {
-        const lock = lockAddress();
-        const isFixed = isFixedStart();
-
-        if (!validateAddress(lock)) {
-          throw new Error('Invalid lock address');
-        }
-
         const result = await deployLockHook(
           config.baseUrl,
           config.apiKey,
           props.appConf.appId,
           deployment,
-          deployer,
-          lock,
-          isFixed
+          deployer
         );
         txHash = result.txHash;
       } else {
@@ -640,104 +601,6 @@ export default function HooksStep(props: HooksStepProps) {
               </div>
             </div>
           )}
-        </Show>
-
-        {/* Lock Hook Parameters Modal */}
-        <Show when={showLockParams()}>
-          <div
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            onClick={handleCancelLockParams}
-          >
-            <div
-              class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  🔒 Lock Hook Parameters
-                </h3>
-                <button
-                  onClick={handleCancelLockParams}
-                  class="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <div class="space-y-4">
-                {/* Lock Address Input */}
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Lock Contract Address <span class="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={lockAddress()}
-                    onInput={(e) => setLockAddress(e.currentTarget.value)}
-                    class="w-full px-3 py-2 text-sm font-mono border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="0x..."
-                  />
-                  <p class="text-xs text-gray-500 mt-1">
-                    The address of the lock contract to integrate with
-                  </p>
-                </div>
-
-                {/* Is Fixed Start Checkbox */}
-                <div class="p-3 border border-gray-300 rounded-lg">
-                  <label class="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isFixedStart()}
-                      onChange={(e) => setIsFixedStart(e.currentTarget.checked)}
-                      class="mt-0.5 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                    />
-                    <div class="flex-1">
-                      <div class="text-sm font-medium text-gray-900">Fixed Start Time</div>
-                      <div class="text-xs text-gray-500 mt-0.5">
-                        Enable if the lock has a fixed start time for all users
-                      </div>
-                    </div>
-                  </label>
-                </div>
-
-                {/* Action Buttons */}
-                <div class="flex gap-3 pt-2">
-                  <button
-                    onClick={handleConfirmLockDeploy}
-                    disabled={!lockAddress()}
-                    class={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                      !lockAddress()
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md hover:shadow-lg'
-                    }`}
-                  >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
-                    Deploy Lock Hook
-                  </button>
-                  <button
-                    onClick={handleCancelLockParams}
-                    class="px-4 py-2.5 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
         </Show>
       </div>
     </div>

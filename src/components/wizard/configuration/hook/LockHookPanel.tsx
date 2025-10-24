@@ -12,7 +12,7 @@ import {
 } from 'solid-icons/bs';
 import { DeploymentContext } from '../../../../hooks/context/Deployment';
 import { useStreamPreset, type StreamPreset } from '../../../../hooks/useStreamPreset';
-import { keccak256, toBytes } from 'viem';
+import { keccak256, toBytes, isAddress, parseUnits, formatUnits } from 'viem';
 import HookPanelHeader from './HookPanelHeader';
 import Spin from '../../../Spin';
 
@@ -50,9 +50,10 @@ export default function LockHookPanel(props: LockHookPanelProps) {
   const [tempCliffDuration, setTempCliffDuration] = createSignal(0);
   const [tempVestingDuration, setTempVestingDuration] = createSignal(0);
   const [tempPieceDuration, setTempPieceDuration] = createSignal(0);
-  const [tempStartUnlockPercentage, setTempStartUnlockPercentage] = createSignal(0);
-  const [tempCliffUnlockPercentage, setTempCliffUnlockPercentage] = createSignal(0);
-
+  const [tempStartUnlockPercentage, setTempStartUnlockPercentage] = createSignal('0');
+  const [tempCliffUnlockPercentage, setTempCliffUnlockPercentage] = createSignal('0');
+  const [tempLock, setTempLock] = createSignal('0x0000000000000000000000000000000000000000');
+  const [tempIsFixedStart, setTempIsFixedStart] = createSignal(false);
   // Initialize temp values when streamPreset changes
   createEffect(() => {
     const preset = streamPreset();
@@ -61,19 +62,43 @@ export default function LockHookPanel(props: LockHookPanelProps) {
       setTempCliffDuration(Number(preset.cliffDuration));
       setTempVestingDuration(Number(preset.vestingDuration));
       setTempPieceDuration(Number(preset.pieceDuration));
-      setTempStartUnlockPercentage(Number(preset.startUnlockPercentage));
-      setTempCliffUnlockPercentage(Number(preset.cliffUnlockPercentage));
+      // Convert Wei to percentage string (0-100)
+      // e.g., 10^17 Wei = formatUnits(10^17, 16) = '10'
+      setTempStartUnlockPercentage(formatUnits(preset.startUnlockPercentage, 16));
+      setTempCliffUnlockPercentage(formatUnits(preset.cliffUnlockPercentage, 16));
+      setTempLock(preset.lock);
+      setTempIsFixedStart(preset.isFixedStart);
     }
   });
 
   const handleSave = async () => {
+    if (!isAddress(tempLock())) {
+      alert('Invalid lock address');
+      return;
+    }
+
+    // Validate and convert percentage string (0-100) to Wei using parseUnits(v, 16)
+    // e.g., 10% = parseUnits('10', 16) = 10^17 Wei
+    let startUnlockWei: bigint;
+    let cliffUnlockWei: bigint;
+
+    try {
+      startUnlockWei = parseUnits(tempStartUnlockPercentage() || '0', 16);
+      cliffUnlockWei = parseUnits(tempCliffUnlockPercentage() || '0', 16);
+    } catch (error) {
+      alert('Invalid percentage values. Please enter valid numbers.');
+      return;
+    }
+
     const newPreset: StreamPreset = {
       startTime: BigInt(tempStartTime()),
       cliffDuration: BigInt(tempCliffDuration()),
       vestingDuration: BigInt(tempVestingDuration()),
       pieceDuration: BigInt(tempPieceDuration()),
-      startUnlockPercentage: BigInt(tempStartUnlockPercentage()),
-      cliffUnlockPercentage: BigInt(tempCliffUnlockPercentage()),
+      startUnlockPercentage: startUnlockWei,
+      cliffUnlockPercentage: cliffUnlockWei,
+      lock: tempLock() as `0x${string}`,
+      isFixedStart: tempIsFixedStart(),
     };
 
     setIsDeploying(true);
@@ -96,8 +121,12 @@ export default function LockHookPanel(props: LockHookPanelProps) {
       setTempCliffDuration(Number(preset.cliffDuration));
       setTempVestingDuration(Number(preset.vestingDuration));
       setTempPieceDuration(Number(preset.pieceDuration));
-      setTempStartUnlockPercentage(Number(preset.startUnlockPercentage));
-      setTempCliffUnlockPercentage(Number(preset.cliffUnlockPercentage));
+      // Convert Wei to percentage string (0-100)
+      // e.g., 10^17 Wei = formatUnits(10^17, 16) = '10'
+      setTempStartUnlockPercentage(formatUnits(preset.startUnlockPercentage, 16));
+      setTempCliffUnlockPercentage(formatUnits(preset.cliffUnlockPercentage, 16));
+      setTempLock(preset.lock);
+      setTempIsFixedStart(preset.isFixedStart);
     }
     setIsEditing(false);
   };
@@ -110,8 +139,10 @@ export default function LockHookPanel(props: LockHookPanelProps) {
     return `${seconds}s`;
   };
 
-  const formatPercentage = (value: number) => {
-    return `${(value / 1e16).toFixed(2)}%`;
+  const formatPercentage = (value: bigint) => {
+    // Convert from Wei to percentage
+    // e.g., 10^17 Wei = formatUnits(10^17, 16) = '10' = 10%
+    return `${Number(formatUnits(value, 16)).toFixed(2)}%`;
   };
 
   const formatTimestamp = (timestamp: number) => {
@@ -154,30 +185,91 @@ export default function LockHookPanel(props: LockHookPanelProps) {
 
       {/* Vesting Configuration Details */}
       <div class="p-4 bg-white bg-opacity-50">
-        {/* Start Time */}
+        {/* Lock Address */}
         <div class="bg-white rounded-lg p-3 border border-purple-100 mb-4">
           <div class="flex items-center gap-2 mb-1">
-            <BsCalendar class="text-purple-500" size={16} />
-            <span class="text-xs font-medium text-gray-500">Start Time</span>
+            <BsLock class="text-purple-500" size={16} />
+            <span class="text-xs font-medium text-gray-500">Lock Address</span>
           </div>
           <Show
             when={isEditing()}
             fallback={
               <Suspense fallback={<Spin size={14} />}>
-                <div class="text-lg font-bold text-gray-900">
-                  {formatTimestamp(Number(streamPreset()?.startTime))}
+                <div class="text-sm font-mono text-gray-900 break-all">
+                  {streamPreset()?.lock || '0x0000000000000000000000000000000000000000'}
                 </div>
               </Suspense>
             }
           >
             <input
-              type="datetime-local"
-              value={formatDateTimeLocal(tempStartTime())}
-              onInput={(e) => setTempStartTime(parseDateTimeLocal(e.currentTarget.value))}
-              class="w-full px-3 py-2 border border-purple-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+              type="text"
+              value={tempLock()}
+              onInput={(e) => setTempLock(e.currentTarget.value)}
+              class="w-full px-3 py-2 border border-purple-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm font-mono"
+              placeholder="0x..."
             />
           </Show>
         </div>
+
+        {/* IsFixedStart Checkbox */}
+        <div class="bg-white rounded-lg p-3 border border-purple-100 mb-4">
+          <div class="flex items-center gap-2">
+            <Show
+              when={isEditing()}
+              fallback={
+                <Suspense fallback={<Spin size={14} />}>
+                  <input
+                    type="checkbox"
+                    checked={streamPreset()?.isFixedStart}
+                    disabled
+                    class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <span class="text-sm font-medium text-gray-900">Fixed Start Time</span>
+                </Suspense>
+              }
+            >
+              <input
+                type="checkbox"
+                checked={tempIsFixedStart()}
+                onInput={(e) => setTempIsFixedStart(e.currentTarget.checked)}
+                class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
+              />
+              <span class="text-sm font-medium text-gray-900">Fixed Start Time</span>
+            </Show>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">
+            If enabled, the start time is fixed. Otherwise, start time can be flexible.
+          </p>
+        </div>
+
+        {/* Start Time */}
+        <Suspense fallback={<Spin size={14} />}>
+          <Show when={isEditing() ? tempIsFixedStart() : streamPreset()?.isFixedStart}>
+            <div class="bg-white rounded-lg p-3 border border-purple-100 mb-4">
+              <div class="flex items-center gap-2 mb-1">
+                <BsCalendar class="text-purple-500" size={16} />
+                <span class="text-xs font-medium text-gray-500">Start Time</span>
+              </div>
+              <Show
+                when={isEditing()}
+                fallback={
+                  <Suspense fallback={<Spin size={14} />}>
+                    <div class="text-lg font-bold text-gray-900">
+                      {formatTimestamp(Number(streamPreset()?.startTime))}
+                    </div>
+                  </Suspense>
+                }
+              >
+                <input
+                  type="datetime-local"
+                  value={formatDateTimeLocal(tempStartTime())}
+                  onInput={(e) => setTempStartTime(parseDateTimeLocal(e.currentTarget.value))}
+                  class="w-full px-3 py-2 border border-purple-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                />
+              </Show>
+            </div>
+          </Show>
+        </Suspense>
 
         {/* Duration Grid */}
         <div class="grid grid-cols-3 gap-4">
@@ -265,26 +357,24 @@ export default function LockHookPanel(props: LockHookPanelProps) {
           <div class="bg-white rounded-lg p-3 border border-purple-100">
             <div class="flex items-center gap-2 mb-1">
               <BsUnlock class="text-purple-500" size={16} />
-              <span class="text-xs font-medium text-gray-500">Start Unlock (Wei, 1e18 = 100%)</span>
+              <span class="text-xs font-medium text-gray-500">Start Unlock Percentage</span>
             </div>
             <Show
               when={isEditing()}
               fallback={
                 <Suspense fallback={<Spin size={14} />}>
                   <div class="text-lg font-bold text-purple-600">
-                    {formatPercentage(Number(streamPreset()?.startUnlockPercentage))}
+                    {formatPercentage(streamPreset()?.startUnlockPercentage || BigInt(0))}
                   </div>
                 </Suspense>
               }
             >
               <input
-                type="number"
+                type="text"
                 value={tempStartUnlockPercentage()}
-                onInput={(e) => setTempStartUnlockPercentage(Number(e.currentTarget.value))}
-                min="0"
-                max="1000000000000000000"
+                onInput={(e) => setTempStartUnlockPercentage(e.currentTarget.value)}
                 class="w-full px-3 py-2 border border-purple-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                placeholder="e.g., 100000000000000000 for 10%"
+                placeholder="e.g., 10 for 10%"
               />
             </Show>
           </div>
@@ -292,26 +382,24 @@ export default function LockHookPanel(props: LockHookPanelProps) {
           <div class="bg-white rounded-lg p-3 border border-purple-100">
             <div class="flex items-center gap-2 mb-1">
               <BsUnlock class="text-purple-500" size={16} />
-              <span class="text-xs font-medium text-gray-500">Cliff Unlock (Wei, 1e18 = 100%)</span>
+              <span class="text-xs font-medium text-gray-500">Cliff Unlock Percentage</span>
             </div>
             <Show
               when={isEditing()}
               fallback={
                 <Suspense fallback={<Spin size={14} />}>
                   <div class="text-lg font-bold text-purple-600">
-                    {formatPercentage(Number(streamPreset()?.cliffUnlockPercentage))}
+                    {formatPercentage(streamPreset()?.cliffUnlockPercentage || BigInt(0))}
                   </div>
                 </Suspense>
               }
             >
               <input
-                type="number"
+                type="text"
                 value={tempCliffUnlockPercentage()}
-                onInput={(e) => setTempCliffUnlockPercentage(Number(e.currentTarget.value))}
-                min="0"
-                max="1000000000000000000"
+                onInput={(e) => setTempCliffUnlockPercentage(e.currentTarget.value)}
                 class="w-full px-3 py-2 border border-purple-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                placeholder="e.g., 200000000000000000 for 20%"
+                placeholder="e.g., 20 for 20%"
               />
             </Show>
           </div>

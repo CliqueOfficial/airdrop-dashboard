@@ -89,13 +89,11 @@ export default function EditableListView<T>(props: EditableListViewProps<T>) {
   const canEdit = props.canEdit ?? true;
 
   return (
-    <div class={`border border-gray-300 rounded-md bg-white shadow-sm ${props.class || ''}`}>
+    <div class={props.class ?? `border border-gray-300 rounded-md bg-white shadow-sm`}>
       {/* Header */}
       <Show when={props.title || canEdit}>
         <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center gap-2">
-          <Show when={props.title}>
-            <h3 class="text-lg font-semibold text-gray-900 flex-1">{props.title}</h3>
-          </Show>
+          <Show when={props.title}>{props.title}</Show>
 
           <Show when={canEdit}>
             <Show

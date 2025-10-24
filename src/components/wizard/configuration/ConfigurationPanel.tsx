@@ -70,6 +70,21 @@ export default function ConfigurationPanel({
   };
 
   const [fallbackIdx, setFallbackIdx] = createSignal(configuration.fallbackIdx || '0');
+  const [isDeploying, setIsDeploying] = createSignal(false);
+
+  const handleDeploy = async () => {
+    setIsDeploying(true);
+    try {
+      await update({
+        strategy: configuration.strategy || [],
+        fallbackIdx: fallbackIdx(),
+        deployed: true,
+      });
+      await refetch();
+    } finally {
+      setIsDeploying(false);
+    }
+  };
 
   return (
     <EditableListView
@@ -102,17 +117,14 @@ export default function ConfigurationPanel({
           <Suspense>
             <Show when={!isSynced(data())}>
               <button
-                onClick={() => {
-                  update({
-                    strategy: configuration.strategy || [],
-                    fallbackIdx: fallbackIdx(),
-                    deployed: true,
-                  });
-                  refetch();
-                }}
-                class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors shadow-sm"
+                onClick={handleDeploy}
+                disabled={isDeploying()}
+                class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Deploy
+                <Show when={isDeploying()}>
+                  <Spin size={14} />
+                </Show>
+                {isDeploying() ? 'Deploying...' : 'Deploy'}
               </button>
             </Show>
           </Suspense>

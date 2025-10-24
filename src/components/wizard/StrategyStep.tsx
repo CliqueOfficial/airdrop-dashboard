@@ -104,6 +104,7 @@ function DeploymentStrategyPanel(props: DeploymentStrategyPanelProps) {
 
   return (
     <EditableListView
+      class=""
       items={Object.entries(configurations)}
       createView={(onItemCreated, onCancel) => (
         <ConfigurationCreateView onItemCreated={onItemCreated} onCancel={onCancel} />
