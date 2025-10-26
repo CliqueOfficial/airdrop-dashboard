@@ -127,7 +127,7 @@ export const useConfiguration = ({
     const applyingConfiguration = {
       strategy: configuration.strategy.map((strategy) => ({
         hook: roles()[strategy.hook] as `0x${string}`, // convert name to address
-        proportion: (parseEther(strategy.proportion) / 100n).toString(), // convert percentage to fixed point
+        proportion: strategy.proportion, // convert percentage to fixed point
       })),
       fallbackIdx: configuration.fallbackIdx,
       deployed: false, // It doesn't matter

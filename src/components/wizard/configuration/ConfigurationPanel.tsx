@@ -152,7 +152,7 @@ export default function ConfigurationPanel({
           fallbackIdx: fallbackIdx(),
           deployed: false,
         };
-        console.log('calling setConfiguration with:', newConfig);
+        console.log('calling setConfiguration with:', JSON.stringify(newConfig, null, 2));
         setConfiguration(newConfig);
       }}
     >
@@ -251,7 +251,7 @@ function StrategyCreateView(props: StrategyCreateViewProps) {
   const handleConfirm = () => {
     props.onItemCreated({
       hook: hookName(),
-      proportion: proportion(),
+      proportion: parseUnits(proportion(), 16).toString(),
     });
     setProportion('0');
   };

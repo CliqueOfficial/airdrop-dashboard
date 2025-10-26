@@ -1,3 +1,4 @@
+import { formatUnits } from 'viem';
 import HookPanelHeader from './HookPanelHeader';
 import { BsArrowRight } from 'solid-icons/bs';
 
@@ -13,7 +14,7 @@ export default function TransferHookPanel(props: TransferHookPanelProps) {
         icon={BsArrowRight}
         title="Transfer Hook"
         description="Direct token transfer to recipients"
-        proportion={props.proportion}
+        proportion={formatUnits(BigInt(props.proportion), 16)}
         isFallback={props.isFallback}
         color="green"
       />
