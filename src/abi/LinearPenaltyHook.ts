@@ -90,6 +90,11 @@ export default [
         type: 'uint256',
         internalType: 'uint256',
       },
+      {
+        name: '_claimAt',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
     ],
     outputs: [
       {
@@ -456,6 +461,11 @@ export default [
   {
     type: 'error',
     name: 'InvalidPenaltyConfig',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidTimestamp',
     inputs: [],
   },
   {

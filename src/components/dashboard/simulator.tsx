@@ -156,7 +156,9 @@ const ConfigurationPanel = () => {
       setHookExtra(
         fallbackIdx,
         produce((state) => {
-          state.allocatedAmount = totalAllocated() - totalConsumed;
+          if (totalAllocated() > totalConsumed) {
+            state.allocatedAmount = totalAllocated() - totalConsumed;
+          }
         })
       );
     }

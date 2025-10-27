@@ -10,6 +10,7 @@ export default function TransferHook(props: TransferHookProps) {
   const { allocatedAmount, setHookExtra } = props;
 
   createEffect(() => {
+    console.log('allocatedAmount', allocatedAmount());
     setHookExtra({
       data: encodeAbiParameters([{ type: 'uint256' }], [allocatedAmount()]),
       consumed: allocatedAmount(),

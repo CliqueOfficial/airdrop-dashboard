@@ -25,6 +25,8 @@ export default function LinearPenaltyHook(props: LinearPenaltyHookProps) {
   const linearPenaltyHookAddr = () => roles()['linearPenaltyHook'];
   const client = createMemo(() => createPublicClient(chainId().toString(), rpcUrl()));
 
+  const now = BigInt(Date.now()) / 1000n;
+
   const [data] = createResource(
     () => {
       if (!client() || !linearPenaltyHookAddr() || !props.allocatedAmount()) {
@@ -41,7 +43,7 @@ export default function LinearPenaltyHook(props: LinearPenaltyHookProps) {
         address: linearPenaltyHookAddr,
         abi: LinearPenaltyHookAbi,
         functionName: 'getPenalty',
-        args: [keccak256(toBytes(configurationName())), allocatedAmount],
+        args: [keccak256(toBytes(configurationName())), allocatedAmount, now],
       });
     }
   );
@@ -51,7 +53,13 @@ export default function LinearPenaltyHook(props: LinearPenaltyHookProps) {
       return;
     }
     props.setHookExtra({
-      data: encodeAbiParameters([{ type: 'uint256' }], [props.allocatedAmount()]),
+      data: encodeAbiParameters(
+        [
+          { name: 'amount', type: 'uint256' },
+          { name: 'claimAt', type: 'uint256' },
+        ],
+        [props.allocatedAmount(), now]
+      ),
       consumed: data()!,
     });
   });
@@ -94,8 +102,8 @@ export default function LinearPenaltyHook(props: LinearPenaltyHookProps) {
             <dd class="text-lg font-mono text-gray-900">{props.allocatedAmount().toString()}</dd>
           </div>
           <div class="bg-red-50 rounded-lg p-3 border border-red-100">
-            <dt class="text-xs font-medium text-gray-600 mb-1">Consumed</dt>
-            <dd class="text-lg font-mono text-red-700">{(data() ?? 0n).toString()}</dd>
+            <dt class="text-xs font-medium text-gray-600 mb-1">Claim At</dt>
+            <dd class="text-lg font-mono text-red-700">{now.toString()}</dd>
           </div>
           <Show when={data()}>
             <div class="bg-amber-50 rounded-lg p-3 border border-amber-100">
