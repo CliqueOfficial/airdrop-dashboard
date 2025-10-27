@@ -52,7 +52,7 @@ export default [
         internalType: 'address',
       },
       {
-        name: '_configurationId',
+        name: '_root',
         type: 'bytes32',
         internalType: 'bytes32',
       },

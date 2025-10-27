@@ -38,6 +38,7 @@ export default function LinearPenaltyHook(props: LinearPenaltyHookProps) {
         allocatedAmount: props.allocatedAmount(),
       };
     },
+
     async ({ client, linearPenaltyHookAddr, allocatedAmount }) => {
       return client.readContract({
         address: linearPenaltyHookAddr,
