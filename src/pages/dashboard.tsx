@@ -1,13 +1,15 @@
 import { useParams, useNavigate } from '@solidjs/router';
-import { createSignal, For, Show } from 'solid-js';
+import { createSignal, For, Show, Switch, Match, Suspense } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
 import { useConfig } from '../hooks/useConfig';
 import { TbEdit } from 'solid-icons/tb';
 import { useAppConf } from '../hooks/useAppConf';
 import Deployment from '../components/dashboard/deployment';
 import Relayers from '../components/dashboard/relayer';
+import Simulator from '../components/dashboard/simulator';
+import { AppConfContext } from '../hooks/context/AppConf';
 
-type TabType = 'deployments' | 'relay' | 'batch';
+type TabType = 'deployments' | 'relay' | 'batch' | 'simulator';
 
 export default function Dashboard() {
   const { config } = useConfig();
@@ -26,6 +28,7 @@ export default function Dashboard() {
     { id: 'deployments' as TabType, label: 'Deployments Overview' },
     { id: 'relay' as TabType, label: 'Relay Overview' },
     { id: 'batch' as TabType, label: 'Batch Overview' },
+    { id: 'simulator' as TabType, label: 'Simulator' },
   ];
 
   return (
@@ -64,24 +67,42 @@ export default function Dashboard() {
         </div>
 
         {/* Tab Content */}
-        <div class="bg-white rounded-lg shadow p-6">
-          <Show when={activeTab() === 'deployments'}>
-            <For each={Object.entries(deployments())}>
-              {([name, deployment]) => <Deployment name={name} deployment={deployment} />}
-            </For>
-          </Show>
+        <Suspense>
+          <Show when={appConf()}>
+            <AppConfContext.Provider
+              value={{
+                appConf: appConf()!,
+                setAppConf: () => {},
+                onSave: () => Promise.resolve(true),
+              }}
+            >
+              <div class="bg-white rounded-lg shadow p-6">
+                <Switch>
+                  <Match when={activeTab() === 'deployments'}>
+                    <For each={Object.entries(deployments())}>
+                      {([name, deployment]) => <Deployment name={name} deployment={deployment} />}
+                    </For>
+                  </Match>
 
-          <Show when={activeTab() === 'relay'}>
-            <Relayers appId={appId || ''} />
-          </Show>
+                  <Match when={activeTab() === 'relay'}>
+                    <Relayers appId={appId || ''} />
+                  </Match>
 
-          <Show when={activeTab() === 'batch'}>
-            <div>
-              <h2 class="text-xl font-semibold text-gray-900 mb-4">Batch Overview</h2>
-              <p class="text-gray-500">Content coming soon...</p>
-            </div>
+                  <Match when={activeTab() === 'batch'}>
+                    <div>
+                      <h2 class="text-xl font-semibold text-gray-900 mb-4">Batch Overview</h2>
+                      <p class="text-gray-500">Content coming soon...</p>
+                    </div>
+                  </Match>
+
+                  <Match when={activeTab() === 'simulator'}>
+                    <Simulator />
+                  </Match>
+                </Switch>
+              </div>
+            </AppConfContext.Provider>
           </Show>
-        </div>
+        </Suspense>
       </div>
     </div>
   );

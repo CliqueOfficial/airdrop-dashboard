@@ -78,6 +78,30 @@ export default [
   },
   {
     type: 'function',
+    name: 'getPenalty',
+    inputs: [
+      {
+        name: '_configurationId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: '_allocatedamount',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'grantRoles',
     inputs: [
       {
