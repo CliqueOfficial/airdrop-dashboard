@@ -5,7 +5,7 @@ import './index.css';
 import { render, Suspense } from 'solid-js/web';
 
 import App from './app';
-import { Router } from '@solidjs/router';
+import { HashRouter } from '@solidjs/router';
 import { routes } from './routes';
 import { ConfigProvider } from './context/ConfigContext';
 
@@ -19,7 +19,7 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 
 render(
   () => (
-    <Router
+    <HashRouter
       root={(props) => (
         <ConfigProvider>
           <App>{props.children as Element}</App>
@@ -27,7 +27,7 @@ render(
       )}
     >
       {routes}
-    </Router>
+    </HashRouter>
   ),
   root as HTMLElement
 );
