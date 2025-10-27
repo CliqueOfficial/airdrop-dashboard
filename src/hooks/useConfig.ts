@@ -26,18 +26,3 @@ export const useConfig = () => {
 
   return { config, setBaseUrl, setApiKey };
 };
-
-interface Deployment {
-  chainId: string;
-  rpcUrl: string;
-  roles: Record<string, string>;
-  extra: Record<string, any>;
-}
-
-export const useCachedDeployments = () => {
-  const [deployments, setDeployments] = makePersisted(createStore<Record<string, Deployment>>({}), {
-    sync: storageSync,
-    name: 'dashboard-deployments-cache',
-  });
-  return { deployments, setDeployments };
-};
