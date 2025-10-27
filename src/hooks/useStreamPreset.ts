@@ -167,7 +167,7 @@ export const useStreamPreset = ({
     }
 
     // Refetch to ensure consistency
-    refetch();
+    await refetch();
 
     return receipt;
   };

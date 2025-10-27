@@ -21,6 +21,7 @@ import { formatEther, formatUnits, parseEther, parseUnits } from 'viem';
 import { TiWarningOutline } from 'solid-icons/ti';
 import { AiTwotoneCheckCircle } from 'solid-icons/ai';
 import Spin from '../../Spin';
+import LinearPenaltyPanel from './hook/LinearPenaltyPanel';
 
 interface ConfigurationPanelProps {
   name: string;
@@ -229,6 +230,13 @@ export default function ConfigurationPanel({
                 strategy={name}
                 isFallback={fallbackIdx() === index.toString()}
                 isFixedStart={false}
+              />
+            </Match>
+            <Match when={item.hook === 'linearPenaltyHook'}>
+              <LinearPenaltyPanel
+                proportion={item.proportion}
+                isFallback={fallbackIdx() === index.toString()}
+                strategy={name}
               />
             </Match>
           </Switch>
