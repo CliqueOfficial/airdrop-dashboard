@@ -13,6 +13,7 @@ import LinearPenaltyHookAbi from '../../../../abi/LinearPenaltyHook';
 import { encodeAbiParameters, keccak256, parseEther, toBytes } from 'viem';
 import { ConfigurationContext } from '../../../../hooks/context/Configuration';
 import Spin from '../../../Spin';
+import { createStore } from 'solid-js/store';
 
 interface LinearPenaltyHookProps {
   allocatedAmount: Accessor<bigint>;
@@ -49,10 +50,21 @@ export default function LinearPenaltyHook(props: LinearPenaltyHookProps) {
     }
   );
 
+  const hookExtra = createMemo(() => {
+    return encodeAbiParameters(
+      [
+        { name: 'amount', type: 'uint256' },
+        { name: 'claimAt', type: 'uint256' },
+      ],
+      [props.allocatedAmount(), now]
+    );
+  });
+
   createEffect(() => {
     if (!data()) {
       return;
     }
+
     props.setHookExtra({
       data: encodeAbiParameters(
         [
@@ -114,9 +126,7 @@ export default function LinearPenaltyHook(props: LinearPenaltyHookProps) {
           </Show>
           <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
             <dt class="text-xs font-medium text-gray-600 mb-1">Encoded Extra</dt>
-            <dd class="text-xs font-mono text-gray-700 break-all">
-              {encodeAbiParameters([{ type: 'uint256' }], [props.allocatedAmount()])}
-            </dd>
+            <dd class="text-xs font-mono text-gray-700 break-all">{hookExtra()}</dd>
           </div>
         </dl>
       </Suspense>

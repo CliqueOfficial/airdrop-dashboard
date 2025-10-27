@@ -1,4 +1,4 @@
-import { Accessor, createEffect } from 'solid-js';
+import { Accessor, createEffect, createMemo } from 'solid-js';
 import { encodeAbiParameters } from 'viem';
 
 interface TransferHookProps {
@@ -8,6 +8,10 @@ interface TransferHookProps {
 
 export default function TransferHook(props: TransferHookProps) {
   const { allocatedAmount, setHookExtra } = props;
+
+  const hookExtra = createMemo(() => {
+    return encodeAbiParameters([{ type: 'uint256' }], [allocatedAmount()]);
+  });
 
   createEffect(() => {
     console.log('allocatedAmount', allocatedAmount());
@@ -47,9 +51,7 @@ export default function TransferHook(props: TransferHookProps) {
         </div>
         <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
           <dt class="text-xs font-medium text-gray-600 mb-1">Encoded Extra</dt>
-          <dd class="text-xs font-mono text-gray-700 break-all">
-            {encodeAbiParameters([{ type: 'uint256' }], [allocatedAmount()])}
-          </dd>
+          <dd class="text-xs font-mono text-gray-700 break-all">{hookExtra()}</dd>
         </div>
       </dl>
     </article>
