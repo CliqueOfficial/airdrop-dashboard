@@ -27,20 +27,21 @@ export default function LinearPenaltyHook(props: LinearPenaltyHookProps) {
 
   const [data] = createResource(
     () => {
-      if (!client() || !linearPenaltyHookAddr()) {
+      if (!client() || !linearPenaltyHookAddr() || !props.allocatedAmount()) {
         return undefined;
       }
       return {
         client: client()!,
         linearPenaltyHookAddr: linearPenaltyHookAddr(),
+        allocatedAmount: props.allocatedAmount(),
       };
     },
-    async ({ client, linearPenaltyHookAddr }) => {
+    async ({ client, linearPenaltyHookAddr, allocatedAmount }) => {
       return client.readContract({
         address: linearPenaltyHookAddr,
         abi: LinearPenaltyHookAbi,
         functionName: 'getPenalty',
-        args: [keccak256(toBytes(configurationName())), props.allocatedAmount()],
+        args: [keccak256(toBytes(configurationName())), allocatedAmount],
       });
     }
   );
