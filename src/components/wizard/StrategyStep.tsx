@@ -14,17 +14,13 @@ import TabView from '../TabView';
 import { DeploymentContext } from '../../hooks/context/Deployment';
 import ConfigurationPanel from './configuration/ConfigurationPanel';
 import EditableListView from '../EditableListView';
+import { AppConfContext } from '../../hooks/context/AppConf';
 
-interface StrategyStepProps {
-  appConf: AppConf;
-  setAppConf: SetStoreFunction<AppConf>;
-  onSave?: () => Promise<boolean>;
-}
+export default function StrategyStep() {
+  const { appConf, setAppConf, onSave } = useContext(AppConfContext)!;
+  const [deployments, setDeployments] = createStore(appConf.deployments);
 
-export default function StrategyStep(props: StrategyStepProps) {
-  const [deployments, setDeployments] = createStore(props.appConf.deployments);
-
-  const availableRoots = () => props.appConf.extra.root;
+  const availableRoots = () => appConf.extra.root;
 
   const tabs = createMemo(() => {
     return Object.keys(deployments).map((name) => ({
@@ -40,14 +36,14 @@ export default function StrategyStep(props: StrategyStepProps) {
             contractAddress: () => deployments[tab.id].roles.contract as `0x${string}`,
             chainId: () => BigInt(deployments[tab.id].chainId),
             rpcUrl: () => deployments[tab.id].rpcUrl,
-            appId: () => props.appConf.appId,
+            appId: () => appConf.appId,
             deployment: () => tab.id,
             roles: () => deployments[tab.id].roles as Record<string, `0x${string}`>,
             configurationNames: () => Object.keys(deployments[tab.id].extra.configurations || {}),
           }}
         >
           <DeploymentStrategyPanel
-            appId={props.appConf.appId}
+            appId={appConf.appId}
             name={tab.id}
             deployment={deployments[tab.id]}
             setDeployment={(deployment) => setDeployments(tab.id, deployment)}

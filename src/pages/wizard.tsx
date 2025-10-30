@@ -6,6 +6,7 @@ import {
   createEffect,
   createResource,
   Show,
+  Suspense,
 } from 'solid-js';
 import BasicStep from '../components/wizard/BasicStep';
 import DeploymentStep from '../components/wizard/DeploymentStep';
@@ -23,6 +24,7 @@ import { makePersisted } from '@solid-primitives/storage';
 import { ImSpinner8 } from 'solid-icons/im';
 import { BsX } from 'solid-icons/bs';
 import { AppConfContext } from '../hooks/context/AppConf';
+import { useAppConf } from '../hooks/useAppConf';
 
 const STEPS = [
   {
@@ -79,11 +81,10 @@ const STEPS = [
 ];
 
 export default function Wizard() {
-  const { config } = useConfig();
   const navigate = useNavigate();
 
   const [searchParams, setSerachParams] = useSearchParams<{ appId?: string }>();
-
+  const { appConf: remoteAppConf, update, refetch } = useAppConf(() => searchParams.appId ?? '');
   const [appConf, setAppConf] = createStore<AppConf>({
     appId: '',
     deployments: {},
@@ -96,66 +97,21 @@ export default function Wizard() {
     },
   });
 
+  createEffect(() => {
+    console.log('remoteAppConf:', remoteAppConf.state);
+    if (remoteAppConf()) {
+      console.log('Remote appConf:', remoteAppConf());
+      setAppConf(remoteAppConf()!);
+      console.log('appConf:', appConf);
+    }
+  });
+
   const [currentStep, setCurrentStep] = createSignal(0);
   const [showDebug, setShowDebug] = createSignal(false);
   const [isSaving, setIsSaving] = createSignal(false);
   const [saveError, setSaveError] = createSignal<string | null>(null);
   const [saveSuccess, setSaveSuccess] = createSignal(false);
   const [loadedInProgressAppId, setLoadedInProgressAppId] = createSignal<string | null>(null);
-
-  // Auto-load in-progress app conf from remote using createResource
-  const [inProgressData, { refetch }] = createResource(
-    () => searchParams.appId,
-    async (inProgressAppId) => {
-      if (!inProgressAppId) return null;
-
-      const response = await fetch(`${config.baseUrl}/admin/app_conf/${inProgressAppId}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': config.apiKey,
-        },
-      });
-
-      if (response.ok) {
-        const remoteAppConf = (await response.json()) as AppConf;
-        console.log('Loaded in-progress app conf from remote:', remoteAppConf);
-
-        // Process and set appConf directly
-        const deployments = Object.entries(remoteAppConf.deployments || {}).map(([key, value]) => {
-          if (!value.extra) value.extra = {};
-          if (!('root' in value.extra)) value.extra.root = {};
-          if (!('configurations' in value.extra)) value.extra.configurations = {};
-          return [key, value];
-        });
-
-        setAppConf({
-          appId: remoteAppConf.appId,
-          deployments: Object.fromEntries(deployments),
-          gated: remoteAppConf.gated || false,
-          uniqueDevice: remoteAppConf.uniqueDevice || false,
-          extra: {
-            root: remoteAppConf.extra?.root || {},
-            tosTemplate: remoteAppConf.extra?.tosTemplate || '',
-            tosMessage: remoteAppConf.extra?.tosMessage || '',
-          },
-        });
-
-        // Show success message
-        setLoadedInProgressAppId(inProgressAppId);
-        // Hide success message after 5 seconds
-        setTimeout(() => setLoadedInProgressAppId(null), 5000);
-
-        return remoteAppConf;
-      } else if (response.status === 404) {
-        // App was deleted or doesn't exist, clear the persisted value
-        console.log('In-progress app not found, clearing persisted value');
-        setSerachParams({ appId: undefined });
-        return null;
-      }
-
-      throw new Error('Failed to load in-progress app conf');
-    }
-  );
 
   // Keyboard event handler for Ctrl+Shift+H
   const handleKeyPress = (e: KeyboardEvent) => {
@@ -178,82 +134,31 @@ export default function Wizard() {
   const isFirstStep = () => currentStep() === 0;
   const isLastStep = () => currentStep() === STEPS.length - 1;
 
-  // Save appConf to backend
-  const saveAppConf = async () => {
-    if (!appConf.appId) {
-      setSaveError('App ID is required');
-      return false;
-    }
-
-    for (const step of STEPS) {
-      if (!step.validate(appConf)) {
-        setSaveError(`${step.title} is not valid`);
-        return false;
-      }
-    }
-
-    setIsSaving(true);
-    setSaveError(null);
-    setSaveSuccess(false);
-
-    try {
-      const payload = {
-        deployments: appConf.deployments,
-        gated: appConf.gated,
-        uniqueDevice: appConf.uniqueDevice,
-        extra: appConf.extra,
-      };
-
-      const response = await fetch(`${config.baseUrl}/admin/app_conf/${appConf.appId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': config.apiKey,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to save: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('AppConf saved:', data);
-      setSaveSuccess(true);
-      // Hide success message after 3 seconds
-      setTimeout(() => setSaveSuccess(false), 3000);
-      return true;
-    } catch (error) {
-      console.error('Error saving appConf:', error);
-      setSaveError(error instanceof Error ? error.message : 'Failed to save configuration');
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const nextStep = async () => {
     // Save before moving to next step
-    const saved = await saveAppConf();
-    if (saved && !isLastStep()) {
-      // Persist app ID after first step
-      if (currentStep() === 0 && appConf.appId) {
-        setSerachParams({ appId: appConf.appId });
-        console.log('Saved in-progress app ID:', appConf.appId);
+    try {
+      await update(appConf);
+      if (!isLastStep()) {
+        // Persist app ID after first step
+        if (currentStep() === 0 && appConf.appId) {
+          setSerachParams({ appId: appConf.appId });
+          console.log('Saved in-progress app ID:', appConf.appId);
+        }
+        setCurrentStep(currentStep() + 1);
       }
-
-      setCurrentStep(currentStep() + 1);
+    } catch (error) {
+      console.error('Error updating appConf:', error);
+      setSaveError(error instanceof Error ? error.message : 'Failed to update appConf');
     }
   };
 
   const finishWizard = async () => {
-    const saved = await saveAppConf();
-    if (saved) {
-      // Clear in-progress app ID
-      setSerachParams({ appId: undefined });
-      console.log('Cleared in-progress app ID');
-      // Navigate to home or new page after successful save
+    try {
+      await update(appConf);
       navigate('/home');
+    } catch (error) {
+      console.error('Error updating appConf:', error);
+      setSaveError(error instanceof Error ? error.message : 'Failed to update appConf');
     }
   };
 
@@ -269,70 +174,31 @@ export default function Wizard() {
     }
   };
 
+  const handOnSave = async () => {
+    try {
+      await update(appConf);
+      return true;
+    } catch (error) {
+      console.error('Error updating appConf:', error);
+      setSaveError(error instanceof Error ? error.message : 'Failed to update appConf');
+      return false;
+    }
+  };
+
   return (
-    <AppConfContext.Provider value={{ appConf, setAppConf, onSave: saveAppConf }}>
+    <AppConfContext.Provider
+      value={{
+        appConf,
+        setAppConf,
+        onSave: handOnSave,
+        refetch: async () => {
+          await refetch();
+        },
+        deployments: () => appConf.deployments,
+      }}
+    >
       <section class="bg-gray-100 min-h-screen p-8">
         <div class="max-w-4xl mx-auto">
-          {/* Loading in-progress app */}
-          {inProgressData.loading && (
-            <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div class="flex items-center gap-2 text-blue-800">
-                <ImSpinner8 size={20} class="animate-spin" />
-                <span class="font-medium">Loading in-progress configuration...</span>
-              </div>
-            </div>
-          )}
-
-          {/* Error loading in-progress app */}
-          {inProgressData.error && (
-            <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div class="flex items-center gap-2 text-red-800">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                <span class="text-sm">Failed to load in-progress configuration</span>
-              </div>
-            </div>
-          )}
-
-          {/* Successfully loaded in-progress app */}
-          {loadedInProgressAppId() && (
-            <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2 text-green-800">
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fill-rule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                  <span class="font-medium">
-                    Restored in-progress configuration for: {loadedInProgressAppId()}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setLoadedInProgressAppId(null)}
-                  class="text-green-600 hover:text-green-800 transition-colors"
-                  title="Dismiss"
-                >
-                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Step Bar */}
           <div class="bg-white rounded-lg shadow-md p-6 mb-8">
             <div class="flex items-start justify-between">
@@ -382,37 +248,18 @@ export default function Wizard() {
             <h2 class="text-2xl font-bold text-gray-800 mb-2">{STEPS[currentStep()].title}</h2>
             <p class="text-gray-600 mb-6">{STEPS[currentStep()].description}</p>
 
-            {/* Content area for each step */}
-            <div class="min-h-[300px] py-4">
-              {currentStep() === 0 && <BasicStep appConf={appConf} setAppConf={setAppConf} />}
-              {currentStep() === 1 && <RelayerStep appConf={appConf} setAppConf={setAppConf} />}
-              {currentStep() === 2 && (
-                <UploadBatchStep
-                  appConf={appConf}
-                  setAppConf={setAppConf}
-                  onSave={saveAppConf}
-                  onRefetch={refetch}
-                />
-              )}
-              {currentStep() === 3 && (
-                <DeploymentStep appConf={appConf} setAppConf={setAppConf} onSave={saveAppConf} />
-              )}
-              {currentStep() === 4 && <HooksStep />}
-              {currentStep() === 5 && (
-                <StrategyStep appConf={appConf} setAppConf={setAppConf} onSave={saveAppConf} />
-              )}
-              {currentStep() === 6 && (
-                <ApplyStrategyStep appConf={appConf} setAppConf={setAppConf} onSave={saveAppConf} />
-              )}
-              {currentStep() === 7 && (
-                <ConfigureFeeStep
-                  appId={appConf.appId}
-                  deployments={appConf.deployments}
-                  roots={appConf.extra.root}
-                  onSave={async () => true}
-                />
-              )}
-            </div>
+            <Show when={remoteAppConf.state === 'ready'}>
+              <div class="min-h-[300px] py-4">
+                {currentStep() === 0 && <BasicStep />}
+                {currentStep() === 1 && <RelayerStep appConf={appConf} setAppConf={setAppConf} />}
+                {currentStep() === 2 && <UploadBatchStep />}
+                {currentStep() === 3 && <DeploymentStep />}
+                {currentStep() === 4 && <HooksStep />}
+                {currentStep() === 5 && <StrategyStep />}
+                {currentStep() === 6 && <ApplyStrategyStep />}
+                {currentStep() === 7 && <ConfigureFeeStep />}
+              </div>
+            </Show>
           </div>
 
           <Show when={saveSuccess()}>

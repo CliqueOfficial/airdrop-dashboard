@@ -1,15 +1,12 @@
-import { Accessor, createEffect, createSignal } from 'solid-js';
+import { Accessor, createEffect, createSignal, useContext } from 'solid-js';
 import { AppConf } from '../../types';
-import { SetStoreFunction, unwrap } from 'solid-js/store';
+import { createStore, produce, reconcile, SetStoreFunction, unwrap } from 'solid-js/store';
 import { useSearchParams } from '@solidjs/router';
+import { AppConfContext } from '../../hooks/context/AppConf';
 
-interface BasicStepProps {
-  appConf: AppConf;
-  setAppConf: SetStoreFunction<AppConf>;
-}
-
-export default function BasicStep(props: BasicStepProps) {
+export default function BasicStep() {
   const [searchParams, setSerachParams] = useSearchParams<{ appId?: string }>();
+  const { appConf, setAppConf } = useContext(AppConfContext)!;
 
   return (
     <div class="space-y-6">
@@ -21,8 +18,8 @@ export default function BasicStep(props: BasicStepProps) {
         <input
           type="text"
           disabled={!!searchParams.appId}
-          value={props.appConf.appId}
-          onInput={(e) => props.setAppConf('appId', e.currentTarget.value)}
+          value={appConf.appId}
+          onChange={(e) => setAppConf('appId', e.currentTarget.value)}
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Enter app ID"
           required
@@ -36,8 +33,8 @@ export default function BasicStep(props: BasicStepProps) {
           Terms of Service Template
         </label>
         <textarea
-          value={props.appConf.extra.tosTemplate}
-          onInput={(e) => props.setAppConf('extra', 'tosTemplate', e.currentTarget.value)}
+          value={appConf.extra.tosTemplate}
+          onChange={(e) => setAppConf('extra', 'tosTemplate', e.currentTarget.value)}
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Enter ToS template"
           rows="4"
@@ -49,8 +46,8 @@ export default function BasicStep(props: BasicStepProps) {
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Terms of Service Message</label>
         <textarea
-          value={props.appConf.extra.tosMessage}
-          onInput={(e) => props.setAppConf('extra', 'tosMessage', e.currentTarget.value)}
+          value={appConf.extra.tosMessage}
+          onChange={(e) => setAppConf('extra', 'tosMessage', e.currentTarget.value)}
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Enter ToS message"
           rows="3"
@@ -64,8 +61,8 @@ export default function BasicStep(props: BasicStepProps) {
           <input
             id="gated"
             type="checkbox"
-            checked={props.appConf.gated}
-            onChange={(e) => props.setAppConf('gated', e.currentTarget.checked)}
+            checked={appConf.gated}
+            onChange={(e) => setAppConf('gated', e.currentTarget.checked)}
             class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
           />
         </div>
@@ -83,8 +80,8 @@ export default function BasicStep(props: BasicStepProps) {
           <input
             id="uniqueDevice"
             type="checkbox"
-            checked={props.appConf.uniqueDevice}
-            onChange={(e) => props.setAppConf('uniqueDevice', e.currentTarget.checked)}
+            checked={appConf.uniqueDevice}
+            onChange={(e) => setAppConf('uniqueDevice', e.currentTarget.checked)}
             class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
           />
         </div>
@@ -94,6 +91,33 @@ export default function BasicStep(props: BasicStepProps) {
           </label>
           <p class="text-xs text-gray-500">Require unique device for this application</p>
         </div>
+      </div>
+      <div>
+        <label for="partialClaimUrl" class="text-sm font-medium text-gray-700">
+          Partial Claim URL
+        </label>
+        <input
+          type="url"
+          value={appConf.extra.partialClaim?.url ?? ''}
+          onChange={(e) => setAppConf('extra', 'partialClaim', 'url', e.currentTarget.value)}
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Enter partial claim URL"
+        />
+      </div>
+      <div>
+        <label for="partialClaimResponseMapping" class="text-sm font-medium text-gray-700">
+          Partial Claim Response Mapping
+        </label>
+        <input
+          type="text"
+          value={appConf.extra.partialClaim?.responseMapping ?? ''}
+          onChange={(e) =>
+            setAppConf('extra', 'partialClaim', 'responseMapping', e.currentTarget.value)
+          }
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Enter partial claim response mapping"
+        />
+        <p class="mt-1 text-xs text-gray-500">Response mapping for partial claim</p>
       </div>
     </div>
   );

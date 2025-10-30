@@ -2,6 +2,10 @@ export interface AppConfExtra {
   root: Record<string, string>;
   tosTemplate: string;
   tosMessage: string;
+  partialClaim?: {
+    url: string;
+    responseMapping: string;
+  };
   [key: string]: any;
 }
 

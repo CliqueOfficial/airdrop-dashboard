@@ -1,19 +1,13 @@
-import { createSignal, Show } from 'solid-js';
+import { createSignal, Show, useContext } from 'solid-js';
 import { AppConf } from '../../types';
 import { SetStoreFunction } from 'solid-js/store';
 import { useConfig } from '../../hooks/useConfig';
 import { Sha256 } from '@aws-crypto/sha256-browser';
+import { AppConfContext } from '../../hooks/context/AppConf';
 
-interface UploadBatchStepProps {
-  appConf: AppConf;
-  setAppConf: SetStoreFunction<AppConf>;
-  onSave?: () => Promise<boolean>;
-  onRefetch?: () => void;
-}
-
-export default function UploadBatchStep(props: UploadBatchStepProps) {
+export default function UploadBatchStep() {
   const { config } = useConfig();
-
+  const { appConf, refetch } = useContext(AppConfContext)!;
   const [template, setTemplate] = createSignal('');
   const [fileHash, setFileHash] = createSignal('');
   const [primaryKey, setPrimaryKey] = createSignal('');
@@ -78,7 +72,7 @@ export default function UploadBatchStep(props: UploadBatchStepProps) {
 
       // Updated URL: no deploymentName needed
       const response = await fetch(
-        `${config.baseUrl}/admin/upload/${props.appConf.appId}/${batchName()}`,
+        `${config.baseUrl}/admin/upload/${appConf.appId}/${batchName()}`,
         {
           method: 'POST',
           headers: {
@@ -95,11 +89,7 @@ export default function UploadBatchStep(props: UploadBatchStepProps) {
         // Auto-hide success message after 3 seconds
         setTimeout(() => setUploadSuccess(false), 3000);
 
-        // Refetch appConf to sync root data from remote
-        if (props.onRefetch) {
-          console.log('Refetching appConf to sync root data...');
-          props.onRefetch();
-        }
+        await refetch?.();
 
         // Reset form
         setTemplate('');
@@ -123,7 +113,7 @@ export default function UploadBatchStep(props: UploadBatchStepProps) {
     }
   };
 
-  const appRoot = () => props.appConf.extra.root;
+  const appRoot = () => appConf.extra.root;
   const hasRootData = () => appRoot() && Object.keys(appRoot()).length > 0;
 
   return (

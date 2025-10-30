@@ -1,4 +1,13 @@
-import { For, createSignal, Show, createMemo, createResource, Accessor, Suspense } from 'solid-js';
+import {
+  For,
+  createSignal,
+  Show,
+  createMemo,
+  createResource,
+  Accessor,
+  Suspense,
+  useContext,
+} from 'solid-js';
 import type { AppConf, Deployment } from '../../types';
 import { SetStoreFunction, produce } from 'solid-js/store';
 import { BsCheck2Circle, BsTrash } from 'solid-icons/bs';
@@ -10,12 +19,7 @@ import { useConfig } from '../../hooks/useConfig';
 import DistributorAbi from '../../abi/Distributor';
 import { createPublicClient } from '../../util';
 import TabView from '../TabView';
-
-interface ApplyStrategyStepProps {
-  appConf: AppConf;
-  setAppConf: SetStoreFunction<AppConf>;
-  onSave?: () => Promise<boolean>;
-}
+import { AppConfContext } from '../../hooks/context/AppConf';
 
 const setClaimRoot = async (
   baseUrl: string,
@@ -48,9 +52,10 @@ const setClaimRoot = async (
   return response.json() as Promise<{ txHash: string }>;
 };
 
-export default function ApplyStrategyStep(props: ApplyStrategyStepProps) {
-  const deployments = () => props.appConf.deployments;
-  const availableRoots = () => props.appConf.extra.root;
+export default function ApplyStrategyStep() {
+  const { appConf } = useContext(AppConfContext)!;
+  const deployments = () => appConf.deployments;
+  const availableRoots = () => appConf.extra.root;
 
   const tabs = () => {
     return Object.keys(deployments()).map((name) => ({
@@ -64,7 +69,7 @@ export default function ApplyStrategyStep(props: ApplyStrategyStepProps) {
       {(tab) => (
         <div>
           <DeploymentConfigurationPanel
-            appId={props.appConf.appId}
+            appId={appConf.appId}
             name={tab.id}
             deployment={deployments()[tab.id]}
             roots={availableRoots}

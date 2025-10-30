@@ -1,9 +1,18 @@
 import { createMemo } from 'solid-js';
 import { useConfig } from '../hooks/useConfig';
 import { getContractAddress } from 'viem';
+import { createStore, unwrap } from 'solid-js/store';
 
 export default function About() {
   const { config, setBaseUrl, setApiKey } = useConfig();
+  const [state, setState] = createStore({
+    extra: {
+      count: 0,
+    },
+  });
+
+  console.log(state.extra);
+  console.log(structuredClone(unwrap(state)));
   return (
     <section class="bg-gray-100 text-gray-700 p-8">
       <ul>
@@ -29,13 +38,40 @@ export default function About() {
             />
           </div>
         </li>
-        <li>
-          {getContractAddress({
-            from: '0xd6c97B99E53E282A79684a7F3c7dcA72bFa68EfC' as `0x${string}`,
-            nonce: 1n,
-          })}
-        </li>
       </ul>
+      <div>
+        <span>Parent State:</span>
+        {JSON.stringify(state)}
+      </div>
+      <div>
+        <Child extra={unwrap(state.extra)} setExtra={(extra) => setState('extra', extra)} />
+      </div>
     </section>
+  );
+}
+
+interface ChildProps {
+  extra: {
+    count: number;
+  };
+  setExtra: (extra: { count: number }) => void;
+}
+
+function Child(props: ChildProps) {
+  const [extra, setExtra] = createStore(unwrap(props.extra));
+  return (
+    <div>
+      <span>Child State:</span>
+      {JSON.stringify(extra)}
+      <button
+        onClick={() =>
+          setExtra({
+            count: extra.count + 1,
+          })
+        }
+      >
+        Increment
+      </button>
+    </div>
   );
 }

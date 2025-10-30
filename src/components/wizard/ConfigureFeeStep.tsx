@@ -1,17 +1,11 @@
-import { createResource, createSignal, For, Show, Suspense } from 'solid-js';
+import { createResource, createSignal, For, Show, Suspense, useContext } from 'solid-js';
 import { AppConf, Deployment } from '../../types';
 import TabView from '../TabView';
 import { useConfig } from '../../hooks/useConfig';
 import { createPublicClient } from '../../util';
 import DistributorAbi from '../../abi/Distributor';
 import { keccak256, PublicClient, toBytes } from 'viem';
-
-interface ConfigureFeeStepProps {
-  appId: AppConf['appId'];
-  deployments: AppConf['deployments'];
-  roots: AppConf['extra']['root'];
-  onSave: () => Promise<boolean>;
-}
+import { AppConfContext } from '../../hooks/context/AppConf';
 
 interface SetFeeRequest {
   appId: string;
@@ -118,12 +112,11 @@ const readFee = async (
   throw new Error('Invalid fee mode');
 };
 
-export default function ConfigureFeeStep(props: ConfigureFeeStepProps) {
-  const deployments = () => props.deployments;
-  const availableRoots = () => props.roots;
+export default function ConfigureFeeStep() {
+  const { appConf, deployments, refetch } = useContext(AppConfContext)!;
 
   const tabs = () => {
-    return Object.keys(deployments()).map((name) => ({
+    return Object.keys(deployments!()).map((name) => ({
       id: name,
       label: name,
     }));
@@ -134,10 +127,10 @@ export default function ConfigureFeeStep(props: ConfigureFeeStepProps) {
       {(tab) => (
         <div>
           <DeploymentConfigurationPanel
-            appId={props.appId}
+            appId={appConf.appId}
             name={tab.id}
-            deployment={deployments()[tab.id]}
-            roots={props.roots}
+            deployment={deployments!()[tab.id]}
+            roots={appConf.extra.root}
           />
         </div>
       )}
