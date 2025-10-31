@@ -27,12 +27,16 @@ interface ConfigurationPanelProps {
   name: string;
   configuration: Configuration;
   setConfiguration: (configuration: Configuration) => void;
+  isEditing: boolean;
+  updateItem: (item: [string, Configuration]) => void;
 }
 
 export default function ConfigurationPanel({
   name,
   configuration,
   setConfiguration,
+  isEditing,
+  updateItem,
 }: ConfigurationPanelProps) {
   const context = useContext(DeploymentContext)!;
 
@@ -137,7 +141,9 @@ export default function ConfigurationPanel({
         </div>
       }
       items={configuration.strategy || []}
-      canAdd={availableHooks().length > 0}
+      canAdd={availableHooks().length > 0 && isEditing}
+      canDelete={isEditing}
+      canEdit={isEditing}
       createView={(onItemCreated, onCancel) => (
         <StrategyCreateView
           availableHooks={() => availableHooks().map((hook) => hook.name)}
@@ -146,14 +152,11 @@ export default function ConfigurationPanel({
         />
       )}
       onItemsChange={(items) => {
-        console.log('=== onItemsChange called ===');
-        console.log('items:', items);
         const newConfig = {
           strategy: items,
           fallbackIdx: fallbackIdx(),
           deployed: false,
         };
-        console.log('calling setConfiguration with:', JSON.stringify(newConfig, null, 2));
         setConfiguration(newConfig);
       }}
     >

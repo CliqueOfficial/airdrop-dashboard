@@ -88,7 +88,7 @@ function DeploymentStrategyPanel(props: DeploymentStrategyPanelProps) {
         }
       }}
     >
-      {([name, configuration]) => (
+      {([name, configuration], index, isEditing, updateItem) => (
         <Show when={configuration}>
           <ConfigurationPanel
             name={name}
@@ -96,6 +96,8 @@ function DeploymentStrategyPanel(props: DeploymentStrategyPanelProps) {
             setConfiguration={(configuration) => {
               setConfigurations(name, configuration);
             }}
+            isEditing={isEditing}
+            updateItem={updateItem}
           />
         </Show>
       )}
