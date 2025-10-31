@@ -17,7 +17,7 @@ import EditableListView from '../EditableListView';
 import { AppConfContext } from '../../hooks/context/AppConf';
 
 export default function StrategyStep() {
-  const { appConf, setAppConf, onSave } = useContext(AppConfContext)!;
+  const { appConf, setAppConf, save: onSave } = useContext(AppConfContext)!;
   const [deployments, setDeployments] = createStore(appConf.deployments);
 
   const availableRoots = () => appConf.extra.root;
@@ -68,6 +68,8 @@ function DeploymentStrategyPanel(props: DeploymentStrategyPanelProps) {
     props.deployment.extra.configurations
   );
 
+  const { save } = useContext(AppConfContext)!;
+
   return (
     <EditableListView
       class=""
@@ -76,7 +78,14 @@ function DeploymentStrategyPanel(props: DeploymentStrategyPanelProps) {
         <ConfigurationCreateView onItemCreated={onItemCreated} onCancel={onCancel} />
       )}
       onItemsChange={(items) => {
-        console.log(JSON.stringify(items, null, 2));
+        const configurations: Record<string, Configuration> = {};
+        items.forEach(([name, configuration]) => {
+          configurations[name] = configuration;
+        });
+        setConfigurations(configurations);
+        if (save) {
+          save();
+        }
       }}
     >
       {([name, configuration]) => (

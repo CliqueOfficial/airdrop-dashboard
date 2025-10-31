@@ -137,7 +137,6 @@ export default function Wizard() {
   const nextStep = async () => {
     // Save before moving to next step
     try {
-      await update(appConf);
       if (!isLastStep()) {
         // Persist app ID after first step
         if (currentStep() === 0 && appConf.appId) {
@@ -154,7 +153,6 @@ export default function Wizard() {
 
   const finishWizard = async () => {
     try {
-      await update(appConf);
       navigate('/home');
     } catch (error) {
       console.error('Error updating appConf:', error);
@@ -181,6 +179,12 @@ export default function Wizard() {
     } catch (error) {
       console.error('Error updating appConf:', error);
       setSaveError(error instanceof Error ? error.message : 'Failed to update appConf');
+      await new Promise((resolve) =>
+        setTimeout(() => {
+          setSaveError(null);
+          resolve(true);
+        }, 3000)
+      );
       return false;
     }
   };
@@ -190,7 +194,7 @@ export default function Wizard() {
       value={{
         appConf,
         setAppConf,
-        onSave: handOnSave,
+        save: handOnSave,
         refetch: async () => {
           await refetch();
         },

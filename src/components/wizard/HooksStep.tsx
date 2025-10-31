@@ -97,7 +97,7 @@ export default function HooksStep(props: HooksStepProps) {
 }
 
 function HooksPanel() {
-  const { appConf, setAppConf, onSave } = useContext(AppConfContext)!;
+  const { appConf, setAppConf, save } = useContext(AppConfContext)!;
   const { deployment, roles, appId, chainId, rpcUrl } = useContext(DeploymentContext)!;
   const { config } = useConfig();
 
@@ -220,8 +220,8 @@ function HooksPanel() {
       setAppConf('deployments', deployment(), 'roles', hookRoleKey, contractAddress);
 
       // Save configuration
-      if (onSave) {
-        const saved = await onSave();
+      if (save) {
+        const saved = await save();
         if (!saved) {
           throw new Error('Failed to save configuration');
         }

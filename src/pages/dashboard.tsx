@@ -73,7 +73,7 @@ export default function Dashboard() {
               value={{
                 appConf: appConf()!,
                 setAppConf: () => {},
-                onSave: () => Promise.resolve(true),
+                save: () => Promise.resolve(true),
               }}
             >
               <div class="bg-white rounded-lg shadow p-6">

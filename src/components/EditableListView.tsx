@@ -66,7 +66,6 @@ export default function EditableListView<T>(props: EditableListViewProps<T>) {
   // Handle item creation from createView
   const handleItemCreated = (item: T) => {
     setTempItems([...tempItems, item]);
-    props.onItemsChange?.(tempItems);
     setIsCreating(false);
   };
 

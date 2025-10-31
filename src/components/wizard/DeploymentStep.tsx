@@ -47,7 +47,7 @@ const deployContract = async (baseUrl: string, apiKey: string, params: DeployPar
 type DeploymentItem = [string, Deployment];
 
 export default function DeploymentStep() {
-  const { appConf, setAppConf, onSave } = useContext(AppConfContext)!;
+  const { appConf, setAppConf, save: onSave } = useContext(AppConfContext)!;
   const { config } = useConfig();
   const { relayers } = useRelayers(appConf.appId);
   const [error, setError] = createSignal<string | null>(null);

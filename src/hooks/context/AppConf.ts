@@ -5,7 +5,7 @@ import { SetStoreFunction } from 'solid-js/store';
 export interface AppConfContextProps {
   appConf: AppConf;
   setAppConf: SetStoreFunction<AppConf>;
-  onSave?: () => Promise<boolean>;
+  save?: () => Promise<boolean>;
   refetch?: () => Promise<void>;
   deployments?: Accessor<Record<string, Deployment>>;
 }

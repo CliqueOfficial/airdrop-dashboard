@@ -6,7 +6,13 @@ import { AppConfContext } from '../../hooks/context/AppConf';
 
 export default function BasicStep() {
   const [searchParams, setSerachParams] = useSearchParams<{ appId?: string }>();
-  const { appConf, setAppConf } = useContext(AppConfContext)!;
+  const { appConf, setAppConf, save } = useContext(AppConfContext)!;
+
+  createEffect(() => {
+    if (!!appConf.appId) {
+      save?.();
+    }
+  });
 
   return (
     <div class="space-y-6">
@@ -99,7 +105,7 @@ export default function BasicStep() {
         <input
           type="url"
           value={appConf.extra.partialClaim?.url ?? ''}
-          onChange={(e) => setAppConf('extra', 'partialClaim', 'url', e.currentTarget.value)}
+          onChange={(e) => setAppConf('extra', 'partialClaim', { url: e.currentTarget.value })}
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Enter partial claim URL"
         />
@@ -112,7 +118,7 @@ export default function BasicStep() {
           type="text"
           value={appConf.extra.partialClaim?.responseMapping ?? ''}
           onChange={(e) =>
-            setAppConf('extra', 'partialClaim', 'responseMapping', e.currentTarget.value)
+            setAppConf('extra', 'partialClaim', { responseMapping: e.currentTarget.value })
           }
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Enter partial claim response mapping"
