@@ -11,6 +11,7 @@ import { AppConfContext } from '../../hooks/context/AppConf';
 import { DeploymentContext } from '../../hooks/context/Deployment';
 import { FaBrandsBitcoin } from 'solid-icons/fa';
 import EditableListView from '../EditableListView';
+import DefaultHeader from '../editable-list-view/DefaultHeader';
 interface HookType {
   id: string;
   name: string;
@@ -240,7 +241,23 @@ function HooksPanel() {
   };
 
   return (
-    <EditableListView canAdd={false} canDelete={false} canEdit={false} items={HOOK_TYPES}>
+    <EditableListView
+      title={(isEditing, setIsEditing, onConfirm, onCancel, onAdd, canAdd, canEdit) => (
+        <DefaultHeader
+          canEdit={() => canEdit}
+          canAdd={() => canAdd}
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
+          handleConfirm={onConfirm}
+          handleCancel={onCancel}
+          handleAdd={onAdd}
+        />
+      )}
+      canAdd={false}
+      canDelete={false}
+      canEdit={false}
+      items={HOOK_TYPES}
+    >
       {(item) => {
         const address = getHookAddress(item.id);
         const isDeployed = !!address;

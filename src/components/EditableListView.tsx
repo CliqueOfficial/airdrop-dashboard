@@ -1,9 +1,17 @@
-import { createSignal, Show, For, createEffect, type JSX } from 'solid-js';
+import { createSignal, Show, For, createEffect, type JSX, Accessor } from 'solid-js';
 import { createStore, unwrap } from 'solid-js/store';
 import { BsCheck, BsPencil, BsPlus, BsTrash, BsX } from 'solid-icons/bs';
 
 interface EditableListViewProps<T> {
-  title?: JSX.Element;
+  title: (
+    isEditing: Accessor<boolean>,
+    setIsEditing: (editing: boolean) => void,
+    onConfirm: () => void,
+    onCancel: () => void,
+    onAdd: () => void,
+    canAdd: boolean,
+    canEdit: boolean
+  ) => JSX.Element;
   items: T[];
   class?: string;
   onItemsChange?: (items: T[]) => void;
@@ -91,50 +99,16 @@ export default function EditableListView<T>(props: EditableListViewProps<T>) {
   return (
     <div class={props.class ?? `border border-gray-300 rounded-md bg-white shadow-sm`}>
       {/* Header */}
-      <Show when={props.title || canEdit}>
-        <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center gap-2">
-          <Show when={props.title}>{props.title}</Show>
-
-          <Show when={canEdit}>
-            <Show
-              when={isEditing()}
-              fallback={
-                <button
-                  class="w-6 h-6 flex items-center justify-center text-blue-500 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
-                  onClick={() => setIsEditing(true)}
-                  title="Edit list"
-                >
-                  <BsPencil size={14} />
-                </button>
-              }
-            >
-              <button
-                class="w-6 h-6 flex items-center justify-center text-green-500 hover:text-green-600 rounded-md transition-colors cursor-pointer"
-                onClick={handleConfirm}
-                title="Confirm changes"
-              >
-                <BsCheck size={16} />
-              </button>
-              <button
-                class="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-600 rounded-md transition-colors cursor-pointer"
-                onClick={handleCancel}
-                title="Cancel changes"
-              >
-                <BsX size={16} />
-              </button>
-              <Show when={canAdd && props.createView}>
-                <button
-                  class="w-6 h-6 flex items-center justify-center text-blue-500 hover:text-blue-600 rounded-md transition-colors cursor-pointer ml-2"
-                  onClick={handleAdd}
-                  title="Add item"
-                >
-                  <BsPlus size={16} />
-                </button>
-              </Show>
-            </Show>
-          </Show>
-        </div>
-      </Show>
+      {props.title &&
+        props.title(
+          isEditing,
+          setIsEditing,
+          handleConfirm,
+          handleCancel,
+          handleAdd,
+          canAdd,
+          canEdit
+        )}
 
       {/* List items */}
       <div class="p-4">

@@ -3,15 +3,77 @@ import { type AppConf, type Deployment } from '../../types';
 import { createPublicClient } from '../../util';
 import DistributorAbi from '../../abi/Distributor';
 import { parseAbi, parseAbiItem, formatEther } from 'viem';
+import { useConfig } from '../../hooks/useConfig';
+import { useParams } from '@solidjs/router';
 
 interface DeploymentProps {
   name: string;
   deployment: Deployment;
 }
 
+const pause = async (
+  baseUrl: string,
+  apiKey: string,
+  appId: string,
+  deployment: string,
+  projectAdmin: string
+) => {
+  const response = await fetch(`${baseUrl}/admin/relay/distributor/pause`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({
+      appId,
+      deployment,
+      projectAdmin,
+    }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to pause distributor');
+  }
+  return response.json() as Promise<{
+    txHash: string;
+  }>;
+};
+
+const unpause = async (
+  baseUrl: string,
+  apiKey: string,
+  appId: string,
+  deployment: string,
+  projectAdmin: string
+) => {
+  const response = await fetch(`${baseUrl}/admin/relay/distributor/unpause`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({
+      appId,
+      deployment,
+      projectAdmin,
+    }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to unpause distributor');
+  }
+  return response.json() as Promise<{
+    txHash: string;
+  }>;
+};
+
 export default function Deployment(props: DeploymentProps) {
   const client = createPublicClient(props.deployment.chainId, props.deployment.rpcUrl)!;
   const contractAddress = props.deployment.roles.contract as `0x${string}`;
+  const projectAdmin = props.deployment.roles.projectAdmin as `0x${string}`;
+
+  const { appId } = useParams();
+  const { config } = useConfig();
+  const baseUrl = () => config.baseUrl;
+  const apiKey = () => config.apiKey;
 
   const [tokenAddr, { refetch: refetchTokenAddr }] = createResource([], async () => {
     const tokenAddr = await client.readContract({
@@ -97,6 +159,35 @@ export default function Deployment(props: DeploymentProps) {
     }
   };
 
+  // Toggle active state
+  const [isToggling, setIsToggling] = createSignal(false);
+  const handleToggleActive = async (checked: boolean) => {
+    const currentBaseUrl = baseUrl();
+    const currentApiKey = apiKey();
+
+    if (!currentBaseUrl || !currentApiKey || !appId) {
+      console.error('Missing configuration: baseUrl, apiKey, or appId');
+      return;
+    }
+
+    setIsToggling(true);
+    try {
+      if (checked) {
+        await unpause(currentBaseUrl, currentApiKey, appId, props.name, projectAdmin);
+      } else {
+        await pause(currentBaseUrl, currentApiKey, appId, props.name, projectAdmin);
+      }
+      // Refetch active state after toggle
+      await refetchActive();
+    } catch (error) {
+      console.error('Failed to toggle contract status:', error);
+      // Revert the UI state on error
+      await refetchActive();
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
   return (
     <div class="space-y-6 mb-8">
       {/* Copy Success Toast */}
@@ -129,9 +220,49 @@ export default function Deployment(props: DeploymentProps) {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Status Card */}
           <InfoCard title="Contract Status">
-            <div class="flex items-center gap-3">
-              <div class={`w-3 h-3 rounded-full ${active() ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span class="text-lg font-semibold">{active() ? 'Active' : 'Inactive'}</span>
+            <div class="space-y-4">
+              <div class="flex items-center gap-3">
+                <div class={`w-3 h-3 rounded-full ${active() ? 'bg-green-500' : 'bg-red-500'}`} />
+                <span class="text-lg font-semibold">{active() ? 'Active' : 'Inactive'}</span>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                <span class="text-sm text-gray-600">Toggle Status</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={active()}
+                    onChange={(e) => handleToggleActive(e.currentTarget.checked)}
+                    disabled={active.loading || isToggling()}
+                    class="sr-only peer"
+                  />
+                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
+                </label>
+              </div>
+              <Show when={isToggling()}>
+                <div class="text-xs text-gray-500 flex items-center gap-2">
+                  <svg
+                    class="animate-spin h-3 w-3"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    ></circle>
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Updating...
+                </div>
+              </Show>
             </div>
           </InfoCard>
 

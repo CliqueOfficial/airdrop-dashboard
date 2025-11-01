@@ -7,6 +7,7 @@ import { AppConfContext } from '../../hooks/context/AppConf';
 import { defineChain, http } from 'viem';
 import { createConfig, getPublicClient } from '@wagmi/core';
 import { ImSpinner8 } from 'solid-icons/im';
+import DefaultHeader from '../editable-list-view/DefaultHeader';
 
 interface DeploymentParams {
   deployer: string;
@@ -223,7 +224,18 @@ export default function DeploymentStep() {
       )}
 
       <EditableListView
-        title={<span class="text-sm font-medium text-gray-700">Deployment List</span>}
+        title={(isEditing, setIsEditing, onConfirm, onCancel, onAdd, canAdd, canEdit) => (
+          <DefaultHeader
+            title={<span class="text-sm font-medium text-gray-700">Deployment List</span>}
+            canEdit={() => canEdit}
+            canAdd={() => canAdd}
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            handleConfirm={onConfirm}
+            handleCancel={onCancel}
+            handleAdd={onAdd}
+          />
+        )}
         items={deploymentItems()}
         createView={createDeploymentView}
         onItemsChange={handleItemsChange}

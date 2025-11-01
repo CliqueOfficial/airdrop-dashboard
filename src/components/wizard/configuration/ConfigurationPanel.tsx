@@ -22,6 +22,7 @@ import { TiWarningOutline } from 'solid-icons/ti';
 import { AiTwotoneCheckCircle } from 'solid-icons/ai';
 import Spin from '../../Spin';
 import LinearPenaltyPanel from './hook/LinearPenaltyPanel';
+import DefaultHeader from '../../editable-list-view/DefaultHeader';
 
 interface ConfigurationPanelProps {
   name: string;
@@ -98,48 +99,59 @@ export default function ConfigurationPanel({
 
   return (
     <EditableListView
-      title={
-        <div class="flex items-center justify-between w-full">
-          <div class="flex items-center gap-2">
-            <Suspense fallback={<Spin size={14} />}>
-              <Show
-                when={!!isSynced(data())}
-                fallback={
-                  <span
-                    class="text-amber-600 cursor-help flex items-center"
-                    title="Configuration is not synced - deployment required"
+      title={(isEditing, setIsEditing, onConfirm, onCancel, onAdd, canAdd, canEdit) => (
+        <DefaultHeader
+          title={
+            <div class="flex items-center justify-between w-full">
+              <div class="flex items-center gap-2">
+                <Suspense fallback={<Spin size={14} />}>
+                  <Show
+                    when={!!isSynced(data())}
+                    fallback={
+                      <span
+                        class="text-amber-600 cursor-help flex items-center"
+                        title="Configuration is not synced - deployment required"
+                      >
+                        <TiWarningOutline size={14} />
+                      </span>
+                    }
                   >
-                    <TiWarningOutline size={14} />
-                  </span>
-                }
-              >
-                <span
-                  class="text-green-600 cursor-help flex items-center"
-                  title="Configuration is synced with on-chain state"
-                >
-                  <AiTwotoneCheckCircle size={14} />
-                </span>
-              </Show>
-            </Suspense>
-            <span class="text-lg font-semibold text-gray-900">{name}</span>
-          </div>
-          {/*TODO: disable when editing. Allow `title` to pass a function (isEditing: boolean) => JSX.Element */}
-          <Suspense>
-            <Show when={!isSynced(data())}>
-              <button
-                onClick={handleDeploy}
-                disabled={isDeploying()}
-                class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <Show when={isDeploying()}>
-                  <Spin size={14} />
+                    <span
+                      class="text-green-600 cursor-help flex items-center"
+                      title="Configuration is synced with on-chain state"
+                    >
+                      <AiTwotoneCheckCircle size={14} />
+                    </span>
+                  </Show>
+                </Suspense>
+                <span class="text-lg font-semibold text-gray-900">{name}</span>
+              </div>
+              {/*TODO: disable when editing. Allow `title` to pass a function (isEditing: boolean) => JSX.Element */}
+              <Suspense>
+                <Show when={!isSynced(data())}>
+                  <button
+                    onClick={handleDeploy}
+                    disabled={isDeploying()}
+                    class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <Show when={isDeploying()}>
+                      <Spin size={14} />
+                    </Show>
+                    {isDeploying() ? 'Deploying...' : 'Deploy'}
+                  </button>
                 </Show>
-                {isDeploying() ? 'Deploying...' : 'Deploy'}
-              </button>
-            </Show>
-          </Suspense>
-        </div>
-      }
+              </Suspense>
+            </div>
+          }
+          canEdit={() => canEdit}
+          canAdd={() => canAdd}
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
+          handleConfirm={onConfirm}
+          handleCancel={onCancel}
+          handleAdd={onAdd}
+        />
+      )}
       items={configuration.strategy || []}
       canAdd={availableHooks().length > 0 && isEditing}
       canDelete={isEditing}

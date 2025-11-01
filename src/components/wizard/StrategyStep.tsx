@@ -15,6 +15,7 @@ import { DeploymentContext } from '../../hooks/context/Deployment';
 import ConfigurationPanel from './configuration/ConfigurationPanel';
 import EditableListView from '../EditableListView';
 import { AppConfContext } from '../../hooks/context/AppConf';
+import DefaultHeader from '../editable-list-view/DefaultHeader';
 
 export default function StrategyStep() {
   const { appConf, setAppConf, save: onSave } = useContext(AppConfContext)!;
@@ -72,7 +73,17 @@ function DeploymentStrategyPanel(props: DeploymentStrategyPanelProps) {
 
   return (
     <EditableListView
-      class=""
+      title={(isEditing, setIsEditing, onConfirm, onCancel, onAdd, canAdd, canEdit) => (
+        <DefaultHeader
+          canEdit={() => canEdit}
+          canAdd={() => canAdd}
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
+          handleConfirm={onConfirm}
+          handleCancel={onCancel}
+          handleAdd={onAdd}
+        />
+      )}
       items={Object.entries(configurations)}
       createView={(onItemCreated, onCancel) => (
         <ConfigurationCreateView onItemCreated={onItemCreated} onCancel={onCancel} />
