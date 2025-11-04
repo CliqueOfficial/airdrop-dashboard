@@ -1,10 +1,10 @@
-import { Suspense, useContext, type Component } from 'solid-js';
-import { A, useLocation } from '@solidjs/router';
-import { ConfigContext } from './context/ConfigContext';
+import { For, Suspense, useContext, type Component } from 'solid-js';
+import { A } from '@solidjs/router';
+import { ConfigContext } from './hooks/context/ConfigContext';
 import WalletConnect from './components/WalletConnect';
 
 const App: Component<{ children: Element }> = (props) => {
-  const { baseEnv, setBaseEnv } = useContext(ConfigContext)!;
+  const { selectedEnv, setSelectedEnv, availableEnvs } = useContext(ConfigContext)!;
 
   return (
     <>
@@ -35,14 +35,15 @@ const App: Component<{ children: Element }> = (props) => {
             <WalletConnect />
           </li>
 
-          <li class="test-sm flex items-center space-x-1">
-            <span>Env:</span>
-            <input
-              class="w-75px p-1 bg-white text-sm rounded-lg"
-              type="text"
-              value={baseEnv()}
-              onFocusOut={(e) => setBaseEnv(e.target.value as string)}
-            />
+          <li class="test-sm flex items-center space-x-2">
+            <span class="text-sm font-medium">Env:</span>
+            <select
+              class="p-1.5 bg-white text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-pointer"
+              value={selectedEnv()}
+              onChange={(e) => setSelectedEnv(e.currentTarget.value)}
+            >
+              <For each={availableEnvs()}>{(env) => <option value={env}>{env}</option>}</For>
+            </select>
           </li>
         </ul>
       </nav>

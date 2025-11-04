@@ -7,7 +7,7 @@ import { render, Suspense } from 'solid-js/web';
 import App from './app';
 import { HashRouter } from '@solidjs/router';
 import { routes } from './routes';
-import { ConfigProvider } from './context/ConfigContext';
+import { ConfigProvider } from './hooks/context/ConfigContext';
 
 const root = document.getElementById('root');
 

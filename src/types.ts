@@ -46,3 +46,8 @@ export interface Deployment {
   roles: Record<string, string>;
   extra: DeploymentExtra;
 }
+
+export interface EnvConfig {
+  apiKey: string;
+  baseUrl: string;
+}
