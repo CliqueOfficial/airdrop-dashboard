@@ -8,8 +8,6 @@ import {
   useContext,
   Accessor,
 } from 'solid-js';
-import merkleDistributorIdl from '../idl/merkle_distributor.json';
-import { MerkleDistributor } from '../idl/merkle_distributor';
 import {
   address,
   appendTransactionMessageInstruction,
