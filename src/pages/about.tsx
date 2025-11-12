@@ -76,9 +76,7 @@ function EditableEnvCard(props: EditableEnvCardProps) {
           <div class="space-y-4">
             {/* Environment Name */}
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Environment Name
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Environment Name</label>
               <div class="px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
                 <span class="font-mono text-gray-900">{props.name}</span>
               </div>
@@ -86,9 +84,7 @@ function EditableEnvCard(props: EditableEnvCardProps) {
 
             {/* Base URL */}
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Base URL
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Base URL</label>
               <input
                 type="text"
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
@@ -100,9 +96,7 @@ function EditableEnvCard(props: EditableEnvCardProps) {
 
             {/* API Key */}
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                API Key
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
               <input
                 type="password"
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-mono"
@@ -138,7 +132,11 @@ function EditableEnvCard(props: EditableEnvCardProps) {
               <span class="text-xs font-medium text-gray-500 uppercase">API Key</span>
               <div class="px-3 py-2 bg-gray-50 rounded border border-gray-200">
                 <span class="text-sm font-mono text-gray-700">
-                  {props.config.apiKey ? '••••••••••••••••' : <span class="text-gray-400 italic">Not set</span>}
+                  {props.config.apiKey ? (
+                    '••••••••••••••••'
+                  ) : (
+                    <span class="text-gray-400 italic">Not set</span>
+                  )}
                 </span>
               </div>
             </div>
@@ -201,9 +199,7 @@ function EnvCreateView(props: EnvCreateViewProps) {
 
         {/* Base URL */}
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Base URL
-          </label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Base URL</label>
           <input
             type="text"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
@@ -215,9 +211,7 @@ function EnvCreateView(props: EnvCreateViewProps) {
 
         {/* API Key */}
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            API Key
-          </label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
           <input
             type="password"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-mono"

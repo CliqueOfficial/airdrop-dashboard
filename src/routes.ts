@@ -25,6 +25,10 @@ export const routes: RouteDefinition[] = [
     component: lazy(() => import('./pages/rpc')),
   },
   {
+    path: '/util',
+    component: lazy(() => import('./pages/util')),
+  },
+  {
     path: '**',
     component: lazy(() => import('./errors/404')),
   },
