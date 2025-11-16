@@ -59,15 +59,6 @@ const App: Component<{ children: Element }> = (props) => {
                     Util
                   </A>
                 </li>
-                <li>
-                  <A 
-                    href="/error" 
-                    class="px-4 py-2 rounded-lg text-gray-600 font-medium hover:bg-gray-100 hover:text-gray-900 transition-all duration-200 no-underline"
-                    activeClass="bg-gray-100 text-gray-900 shadow-sm"
-                  >
-                    Error
-                  </A>
-                </li>
               </ul>
             </div>
 
