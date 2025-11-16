@@ -173,10 +173,14 @@ function BatchListView({
                 </span>
                 <span class="text-sm text-gray-700">
                   {allocation.claim_at
-                    ? new Date(allocation.claim_at).toLocaleDateString('en-US', {
+                    ? new Date(allocation.claim_at).toLocaleString('en-US', {
                       year: 'numeric',
                       month: 'short',
-                      day: 'numeric'
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: false
                     })
                     : <span class="text-gray-400 italic">Not set</span>
                   }
