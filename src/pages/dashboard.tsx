@@ -8,6 +8,7 @@ import Deployment from '../components/dashboard/deployment';
 import Relayers from '../components/dashboard/relayer';
 import Simulator from '../components/dashboard/simulator';
 import { AppConfContext } from '../hooks/context/AppConf';
+import Batch from '../components/dashboard/batch';
 
 type TabType = 'deployments' | 'relay' | 'batch' | 'simulator';
 
@@ -53,10 +54,9 @@ export default function Dashboard() {
                 onClick={() => setActiveTab(tab.id)}
                 class={`
                   py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                  ${
-                    activeTab() === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ${activeTab() === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }
                 `}
               >
@@ -72,7 +72,7 @@ export default function Dashboard() {
             <AppConfContext.Provider
               value={{
                 appConf: appConf()!,
-                setAppConf: () => {},
+                setAppConf: () => { },
                 save: () => Promise.resolve(true),
               }}
             >
@@ -89,10 +89,7 @@ export default function Dashboard() {
                   </Match>
 
                   <Match when={activeTab() === 'batch'}>
-                    <div>
-                      <h2 class="text-xl font-semibold text-gray-900 mb-4">Batch Overview</h2>
-                      <p class="text-gray-500">Content coming soon...</p>
-                    </div>
+                    <Batch appId={appId || ''} />
                   </Match>
 
                   <Match when={activeTab() === 'simulator'}>
