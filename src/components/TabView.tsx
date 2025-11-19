@@ -1,17 +1,19 @@
 import { Accessor, createSignal, For, JSX, Show } from 'solid-js';
 
-interface TabViewProps {
+interface TabViewProps<T> {
   tabs: {
     id: string;
     label: string;
+    data: T;
   }[];
-  children: (tab: { id: string; label: string }) => JSX.Element;
+  children: (tab: { id: string; label: string; data: T }) => JSX.Element;
 }
 
-export default function TabView(props: TabViewProps) {
+export default function TabView<T = null>(props: TabViewProps<T>) {
   const [activeTab, setActiveTab] = createSignal<{
     id: string;
     label: string;
+    data: T;
   } | null>(props.tabs.length > 0 ? props.tabs[0] : null);
 
   return (

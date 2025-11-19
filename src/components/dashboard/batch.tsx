@@ -1,40 +1,63 @@
-import { useParams } from "@solidjs/router";
-import { useAppConf } from "../../hooks/useAppConf";
-import { createMemo, createResource, createSignal, For, Suspense } from "solid-js";
-import TabView from "../TabView";
-import { useConfig } from "../../hooks/useConfig";
-import EditableListView from "../EditableListView";
+import { useParams } from '@solidjs/router';
+import { useAppConf } from '../../hooks/useAppConf';
+import { createEffect, createMemo, createResource, createSignal, For, Suspense } from 'solid-js';
+import TabView from '../TabView';
+import { useConfig } from '../../hooks/useConfig';
+import EditableListView from '../EditableListView';
 import { formatUnits } from 'viem';
+import { TbArrowLeft, TbArrowRight } from 'solid-icons/tb';
 
 interface BatchProps {
   appId: string;
 }
 
-export default function BatchOverview({
-  appId,
-}: BatchProps) {
-  const { appConf, refetch } = useAppConf(() => appId);
-  const availableBatches = () => appConf()?.extra.root || {};
+interface BatchStat {
+  batch: string;
+  totalUsersCount: number;
+  claimedUsersCount: number;
+  totalAllocationAmount: string;
+  claimedAllocationAmount: string;
+}
 
-  const tabs = createMemo(() => {
-    return Object.keys(availableBatches()).map((name) => ({
-      id: name,
-      label: name,
-    }));
+export default function BatchOverview(props: BatchProps) {
+  const { config } = useConfig();
+  const [stats, { refetch: refetchStats }] = createResource(async () => {
+    const response = await fetch(`${config.baseUrl}/admin/stats/${props.appId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': config.apiKey,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stats: ${response.statusText}`);
+    }
+    const stats = (await response.json()) as {
+      perBatchStats: BatchStat[];
+    };
+    return stats.perBatchStats;
   });
 
   return (
-    <TabView tabs={tabs()}>
-      {(tab) => (
-        <BatchListView appId={appId} batchName={tab.label} />
-      )}
-    </TabView>
+    <Suspense fallback={<div>Loading...</div>}>
+      <TabView
+        tabs={
+          stats()?.map((stat) => ({
+            id: stat.batch,
+            label: stat.batch,
+            data: stat,
+          })) || []
+        }
+      >
+        {(tab) => <BatchListView appId={props.appId} batchName={tab.label} data={tab.data} />}
+      </TabView>
+    </Suspense>
   );
 }
 
 interface BatchListViewProps {
   appId: string;
   batchName: string;
+  data: BatchStat;
 }
 
 interface Allocation {
@@ -43,51 +66,72 @@ interface Allocation {
   claim_at?: string;
   extra: {
     recipient?: string;
-  }
+  };
 }
 
-function BatchListView({
-  appId,
-  batchName,
-}: BatchListViewProps) {
+// pub page: Option<NonZeroUsize>,
+// pub cursor: Option<String>,
+// pub page_size: Option<NonZeroUsize>,
+// pub address_handler: Option<String>,
+// pub recipient: Option<String>,
+
+function BatchListView(props: BatchListViewProps) {
   const { config } = useConfig();
   const [decimal, setDecimal] = createSignal(18);
+  const [cursor, setCursor] = createSignal<string | null>(null);
+  const [page, setPage] = createSignal(1);
+  const [pageSize, setPageSize] = createSignal(10);
 
-  const [allocations, { refetch }] = createResource(async () => {
-    const response = await fetch(`${config.baseUrl}/admin/allocation/${appId}/${batchName}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': config.apiKey,
-      },
-    });
+  const pageCount = createMemo(() => {
+    return Math.ceil(props.data.totalUsersCount / pageSize());
+  });
+
+  const [allocations, { refetch }] = createResource(page, async (page) => {
+    const queryParams = new URLSearchParams();
+    queryParams.set('page', page.toString());
+    if (cursor()) {
+      queryParams.set('cursor', cursor()!);
+    } else {
+      queryParams.set('pageSize', pageSize().toString());
+    }
+    const response = await fetch(
+      `${config.baseUrl}/admin/allocation/${props.appId}/${props.batchName}?${queryParams.toString()}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': config.apiKey,
+        },
+      }
+    );
     if (!response.ok) {
       throw new Error(`Failed to fetch allocations: ${response.statusText}`);
     }
 
-    const allocations = await response.json() as Promise<{
+    const allocations = (await response.json()) as {
       allocations: Allocation[];
-    }>;
+      cursor: string | null;
+    };
+    if (allocations?.cursor) {
+      setCursor(allocations.cursor);
+    }
     return allocations;
   });
 
-  // Calculate statistics
-  const stats = createMemo(() => {
-    const items = allocations()?.allocations || [];
-    const totalCount = items.length;
-    const claimedCount = items.filter(item => item.claim_at).length;
+  // Pagination handlers
+  const handlePreviousPage = () => {
+    setPage((prev) => Math.max(1, prev - 1));
+  };
 
-    const totalAllocation = items.reduce((sum, item) => sum + BigInt(item.allocation), BigInt(0));
-    const claimedAllocation = items
-      .filter(item => item.claim_at)
-      .reduce((sum, item) => sum + BigInt(item.allocation), BigInt(0));
+  const handleNextPage = () => {
+    setPage((prev) => Math.min(pageCount(), prev + 1));
+  };
 
-    return {
-      totalCount,
-      claimedCount,
-      totalAllocation,
-      claimedAllocation,
-    };
-  });
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setCursor(null);
+    setPage(1);
+    refetch();
+  };
 
   return (
     <div>
@@ -100,7 +144,7 @@ function BatchListView({
               <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full">
                 <span class="text-xs font-medium text-blue-700">Claims:</span>
                 <span class="text-sm font-bold text-blue-900">
-                  {stats().claimedCount}/{stats().totalCount}
+                  {props.data.claimedUsersCount}/{props.data.totalUsersCount}
                 </span>
               </div>
 
@@ -108,7 +152,8 @@ function BatchListView({
               <div class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full">
                 <span class="text-xs font-medium text-green-700">Amount:</span>
                 <span class="text-sm font-bold text-green-900">
-                  {formatUnits(stats().claimedAllocation, decimal())}/{formatUnits(stats().totalAllocation, decimal())}
+                  {formatUnits(BigInt(props.data.claimedAllocationAmount), decimal())}/
+                  {formatUnits(BigInt(props.data.totalAllocationAmount), decimal())}
                 </span>
               </div>
 
@@ -126,6 +171,45 @@ function BatchListView({
                   onChange={(e) => setDecimal(parseInt(e.currentTarget.value) || 0)}
                   class="w-16 px-2 py-1 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+              </div>
+              {/* Page Size Input */}
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg">
+                <label for="page-size-input" class="text-xs font-medium text-gray-700">
+                  Page Size:
+                </label>
+                <input
+                  id="page-size-input"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={pageSize()}
+                  onChange={(e) => handlePageSizeChange(parseInt(e.currentTarget.value) || 10)}
+                  class="w-16 px-2 py-1 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              {/* Pagination Controls */}
+              <div class="inline-flex items-center gap-1 px-2 py-1.5 bg-gray-50 border border-gray-300 rounded-lg">
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={page() === 1}
+                  class="p-1.5 text-gray-700 hover:bg-gray-200 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  aria-label="Previous page"
+                >
+                  <TbArrowLeft size={18} />
+                </button>
+                <div class="px-3 py-1 min-w-[60px] text-center">
+                  <span class="text-sm font-medium text-gray-900">{page()}</span>
+                  <span class="text-xs text-gray-500 mx-1">/</span>
+                  <span class="text-sm font-medium text-gray-600">{pageCount()}</span>
+                </div>
+                <button
+                  onClick={handleNextPage}
+                  disabled={page() === pageCount()}
+                  class="p-1.5 text-gray-700 hover:bg-gray-200 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  aria-label="Next page"
+                >
+                  <TbArrowRight size={18} />
+                </button>
               </div>
             </div>
           )}
@@ -172,18 +256,19 @@ function BatchListView({
                   Claim Date
                 </span>
                 <span class="text-sm text-gray-700">
-                  {allocation.claim_at
-                    ? new Date(allocation.claim_at).toLocaleString('en-US', {
+                  {allocation.claim_at ? (
+                    new Date(allocation.claim_at).toLocaleString('en-US', {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit',
                       second: '2-digit',
-                      hour12: false
+                      hour12: false,
                     })
-                    : <span class="text-gray-400 italic">Not set</span>
-                  }
+                  ) : (
+                    <span class="text-gray-400 italic">Not set</span>
+                  )}
                 </span>
               </div>
             </div>
