@@ -198,6 +198,16 @@ export default function Deployment(props: DeploymentProps) {
     return formatEther(allowance);
   };
 
+  const formatAllowanceWei = (allowance: bigint | undefined) => {
+    if (!allowance) {
+      return '0';
+    }
+    if (allowance === maxUint256) {
+      return 'Unlimited';
+    }
+    return allowance.toString();
+  };
+
   return (
     <div class="space-y-6 mb-8">
       {/* Copy Success Toast */}
@@ -338,7 +348,7 @@ export default function Deployment(props: DeploymentProps) {
             <Suspense fallback={<LoadingText />}>
               <div class="space-y-1">
                 <div class="text-2xl font-bold text-gray-900">{formatAllowance(allowance())}</div>
-                <div class="text-xs text-gray-500">{allowance()?.toString() || '0'} wei</div>
+                <div class="text-xs text-gray-500">{formatAllowanceWei(allowance())} wei</div>
               </div>
             </Suspense>
           </InfoCard>
