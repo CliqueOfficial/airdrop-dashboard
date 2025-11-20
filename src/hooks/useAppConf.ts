@@ -10,10 +10,10 @@ export const useAppConf = (appId: Accessor<string>) => {
       return null;
     }
 
-    const response = await fetch(`${config.baseUrl}/admin/app_conf/${appId}`, {
+    const response = await fetch(`${config().baseUrl}/admin/app_conf/${appId}`, {
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': config.apiKey,
+        'x-api-key': config().apiKey,
       },
     });
     if (response.status === 404) {
@@ -31,11 +31,11 @@ export const useAppConf = (appId: Accessor<string>) => {
     if (!appConf.appId) {
       throw new Error('App ID is required');
     }
-    const response = await fetch(`${config.baseUrl}/admin/app_conf/${appConf.appId}`, {
+    const response = await fetch(`${config().baseUrl}/admin/app_conf/${appConf.appId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': config.apiKey,
+        'x-api-key': config().apiKey,
       },
       body: JSON.stringify(appConf),
     });
