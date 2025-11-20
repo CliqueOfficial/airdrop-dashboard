@@ -1,5 +1,13 @@
 import { useRelayers } from '../../hooks/useRelayers';
-import { For, Show, Suspense, createMemo, createResource, createSignal, useContext } from 'solid-js';
+import {
+  For,
+  Show,
+  Suspense,
+  createMemo,
+  createResource,
+  createSignal,
+  useContext,
+} from 'solid-js';
 import { Relayer } from '../../types';
 import { createPublicClient } from '../../util';
 import { DeploymentContext } from '../../hooks/context/Deployment';
@@ -94,9 +102,9 @@ export default function Relayers(props: RelayersProps) {
           </svg>
           <div class="flex-1">
             <p class="text-sm text-blue-900">
-              <span class="font-semibold">Online</span> relayers act as paymasters to support
+              <span class="font-semibold">Public</span> relayers act as paymasters to support
               gasless transactions for users.
-              <span class="font-semibold">Offline</span> relayers are not available to users and
+              <span class="font-semibold">Private</span> relayers are not available to users and
               will not process transactions.
             </p>
           </div>
@@ -110,7 +118,7 @@ export default function Relayers(props: RelayersProps) {
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <SummaryCard title="Total Relayers" value={relayers()!.length.toString()} icon="📊" />
               <SummaryCard
-                title="Online Relayers"
+                title="Public Relayers"
                 value={relayers()!
                   .filter((r) => r.online)
                   .length.toString()}
@@ -118,7 +126,7 @@ export default function Relayers(props: RelayersProps) {
                 color="green"
               />
               <SummaryCard
-                title="Offline Relayers"
+                title="Private Relayers"
                 value={relayers()!
                   .filter((r) => !r.online)
                   .length.toString()}
@@ -165,18 +173,15 @@ function RelayerCard(props: {
   onCopy: (text: string) => void;
   truncateAddress: (addr: string) => string;
 }) {
-
   const { appConf, deployments } = useContext(AppConfContext)!;
 
-  const client = createMemo(
-    () => {
-      if (!deployments?.()) return undefined;
-      const deployment = Object.values(deployments?.() || {}).find(
-        (deployment) => deployment.chainId === props.relayer.chainId
-      );
-      return createPublicClient(deployment!.chainId, deployment!.rpcUrl);
-    }
-  )
+  const client = createMemo(() => {
+    if (!deployments?.()) return undefined;
+    const deployment = Object.values(deployments?.() || {}).find(
+      (deployment) => deployment.chainId === props.relayer.chainId
+    );
+    return createPublicClient(deployment!.chainId, deployment!.rpcUrl);
+  });
 
   const [balance] = createResource(
     () => {
@@ -203,7 +208,7 @@ function RelayerCard(props: {
           <span
             class={`text-sm font-medium ${props.relayer.online ? 'text-green-700' : 'text-gray-600'}`}
           >
-            {props.relayer.online ? 'Online' : 'Offline'}
+            {props.relayer.online ? 'Public' : 'Private'}
           </span>
         </div>
       </div>
@@ -243,7 +248,9 @@ function RelayerCard(props: {
         <div>
           <label class="text-xs font-medium text-gray-500 block mb-1">Balance</label>
           <Suspense fallback={<LoadingSpinner />}>
-            <span class="text-sm text-gray-900 font-medium">{balance() ? formatEther(balance()!) : 'undefined'}</span>
+            <span class="text-sm text-gray-900 font-medium">
+              {balance() ? formatEther(balance()!) : 'undefined'}
+            </span>
           </Suspense>
         </div>
       </div>
