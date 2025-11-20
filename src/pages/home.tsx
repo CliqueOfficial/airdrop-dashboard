@@ -1,7 +1,7 @@
 import { Show, For, createResource, createSignal } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { useConfig } from '../hooks/useConfig';
-import { type AppConf } from '../types';
+import { EnvConfig, type AppConf } from '../types';
 import { makePersisted } from '@solid-primitives/storage';
 
 export default function Home() {
@@ -16,11 +16,11 @@ export default function Home() {
 
   // Fetch all app configs
   const [allAppConfs] = createResource(
-    () => config.baseUrl,
-    async (baseUrl: string) => {
-      if (!baseUrl || !config.apiKey) return [];
+    () => config(),
+    async (config: EnvConfig) => {
+      if (!config.baseUrl || !config.apiKey) return [];
 
-      const response = await fetch(`${baseUrl}/admin/app_conf`, {
+      const response = await fetch(`${config.baseUrl}/admin/app_conf`, {
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': config.apiKey,

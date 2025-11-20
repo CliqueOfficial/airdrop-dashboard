@@ -22,10 +22,10 @@ interface BatchStat {
 export default function BatchOverview(props: BatchProps) {
   const { config } = useConfig();
   const [stats, { refetch: refetchStats }] = createResource(async () => {
-    const response = await fetch(`${config.baseUrl}/admin/stats/${props.appId}`, {
+    const response = await fetch(`${config().baseUrl}/admin/stats/${props.appId}`, {
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': config.apiKey,
+        'x-api-key': config().apiKey,
       },
     });
     if (!response.ok) {
@@ -95,11 +95,11 @@ function BatchListView(props: BatchListViewProps) {
       queryParams.set('pageSize', pageSize().toString());
     }
     const response = await fetch(
-      `${config.baseUrl}/admin/allocation/${props.appId}/${props.batchName}?${queryParams.toString()}`,
+      `${config().baseUrl}/admin/allocation/${props.appId}/${props.batchName}?${queryParams.toString()}`,
       {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': config.apiKey,
+          'x-api-key': config().apiKey,
         },
       }
     );

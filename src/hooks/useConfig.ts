@@ -6,5 +6,5 @@ import { makePersisted, storageSync } from '@solid-primitives/storage';
 export const useConfig = () => {
   const { values, current, selectedEnv, setSelectedEnv, setConfig } = useContext(ConfigContext)!;
 
-  return { config: current(), setSelectedEnv, selectedEnv, values, setConfig };
+  return { config: current, setSelectedEnv, selectedEnv, values, setConfig };
 };
