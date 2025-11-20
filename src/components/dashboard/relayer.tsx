@@ -1,6 +1,11 @@
 import { useRelayers } from '../../hooks/useRelayers';
-import { For, Show, Suspense, createSignal } from 'solid-js';
+import { For, Show, Suspense, createMemo, createResource, createSignal, useContext } from 'solid-js';
 import { Relayer } from '../../types';
+import { createPublicClient } from '../../util';
+import { DeploymentContext } from '../../hooks/context/Deployment';
+import { formatEther } from 'viem';
+import { useAppConf } from '../../hooks/useAppConf';
+import { AppConfContext } from '../../hooks/context/AppConf';
 
 interface RelayersProps {
   appId: string;
@@ -160,6 +165,34 @@ function RelayerCard(props: {
   onCopy: (text: string) => void;
   truncateAddress: (addr: string) => string;
 }) {
+
+  const { appConf, deployments } = useContext(AppConfContext)!;
+
+  const client = createMemo(
+    () => {
+      if (!deployments?.()) return undefined;
+      const deployment = Object.values(deployments?.() || {}).find(
+        (deployment) => deployment.chainId === props.relayer.chainId
+      );
+      return createPublicClient(deployment!.chainId, deployment!.rpcUrl);
+    }
+  )
+
+  const [balance] = createResource(
+    () => {
+      if (!client()) return undefined;
+      return {
+        address: props.relayer.address as `0x${string}`,
+        client: client()!,
+      };
+    },
+    async ({ address, client }) => {
+      const balance = await client.getBalance({
+        address: address as `0x${string}`,
+      });
+      return balance;
+    }
+  );
   return (
     <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
       <div class="flex items-start justify-between mb-3">
@@ -204,6 +237,14 @@ function RelayerCard(props: {
         <div>
           <label class="text-xs font-medium text-gray-500 block mb-1">Nonce</label>
           <span class="text-sm text-gray-900 font-medium">{props.relayer.nonce}</span>
+        </div>
+
+        {/* Balance */}
+        <div>
+          <label class="text-xs font-medium text-gray-500 block mb-1">Balance</label>
+          <Suspense fallback={<LoadingSpinner />}>
+            <span class="text-sm text-gray-900 font-medium">{balance() ? formatEther(balance()!) : 'undefined'}</span>
+          </Suspense>
         </div>
       </div>
     </div>

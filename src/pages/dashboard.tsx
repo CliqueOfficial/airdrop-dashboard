@@ -73,6 +73,7 @@ export default function Dashboard() {
             <AppConfContext.Provider
               value={{
                 appConf: appConf()!,
+                deployments: deployments,
                 setAppConf: () => {},
                 save: () => Promise.resolve(true),
               }}
