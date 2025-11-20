@@ -119,6 +119,7 @@ export default function ConfigureFeeStep() {
     return Object.keys(deployments!()).map((name) => ({
       id: name,
       label: name,
+      data: null,
     }));
   };
 
@@ -278,7 +279,7 @@ function FeeConfigurationPanel(props: FeeConfigurationPanelProps) {
       };
 
       // Call set-fee API
-      const response = await setFee(config.baseUrl, config.apiKey, request);
+      const response = await setFee(config().baseUrl, config().apiKey, request);
       const txHash = response.txHash;
 
       // Wait for transaction receipt

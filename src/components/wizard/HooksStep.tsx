@@ -73,6 +73,7 @@ export default function HooksStep(props: HooksStepProps) {
     Object.keys(appConf.deployments).map((deployment) => ({
       id: deployment,
       label: deployment,
+      data: null,
     }));
 
   return (
@@ -167,7 +168,7 @@ function HooksPanel() {
       return;
     }
 
-    if (!config.baseUrl || !config.apiKey) {
+    if (!config().baseUrl || !config().apiKey) {
       setDeployErrors({ ...deployErrors(), [hookId]: 'API configuration missing' });
       return;
     }
@@ -179,8 +180,8 @@ function HooksPanel() {
       // Deploy hook and get transaction hash
       const deployKey = getHookDeployKey(hookId);
       const result = await hookDeployer(deployKey)(
-        config.baseUrl,
-        config.apiKey,
+        config().baseUrl,
+        config().apiKey,
         appId(),
         deployment(),
         deployer

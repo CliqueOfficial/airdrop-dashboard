@@ -338,7 +338,11 @@ export default function DeploymentStep() {
                 dynamicRecipient: params.dynamicRecipient,
               };
 
-              const result = await deployContract(config.baseUrl, config.apiKey, deployApiParams);
+              const result = await deployContract(
+                config().baseUrl,
+                config().apiKey,
+                deployApiParams
+              );
               const { txHash } = result;
 
               if (!txHash) {

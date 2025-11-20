@@ -5,7 +5,7 @@ import { Relayer } from '../types';
 export const useRelayers = (appId: string) => {
   const { config } = useConfig();
   const [relayers, { refetch }] = createResource(
-    () => ({ appId, baseUrl: config.baseUrl, apiKey: config.apiKey }),
+    () => ({ appId, baseUrl: config().baseUrl, apiKey: config().apiKey }),
     async ({ appId, baseUrl, apiKey }) => {
       const response = await fetch(`${baseUrl}/admin/relayer/${appId}`, {
         headers: {

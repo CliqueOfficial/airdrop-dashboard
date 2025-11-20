@@ -135,8 +135,8 @@ export const useConfiguration = ({
 
     // Call API to submit transaction
     const txHash = await callApplyConfiguration(
-      config.baseUrl,
-      config.apiKey,
+      config().baseUrl,
+      config().apiKey,
       appId(),
       deployment(),
       projectAdmin(),

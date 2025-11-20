@@ -72,11 +72,11 @@ export default function UploadBatchStep() {
 
       // Updated URL: no deploymentName needed
       const response = await fetch(
-        `${config.baseUrl}/admin/upload/${appConf.appId}/${batchName()}`,
+        `${config().baseUrl}/admin/upload/${appConf.appId}/${batchName()}`,
         {
           method: 'POST',
           headers: {
-            'x-api-key': config.apiKey,
+            'x-api-key': config().apiKey,
           },
           body: formData,
         }

@@ -1,8 +1,8 @@
-import { createResource, createSignal, Show, Suspense } from 'solid-js';
+import { Accessor, createResource, createSignal, Show, Suspense } from 'solid-js';
 import { type AppConf, type Deployment } from '../../types';
 import { createPublicClient } from '../../util';
 import DistributorAbi from '../../abi/Distributor';
-import { parseAbi, parseAbiItem, formatEther } from 'viem';
+import { parseAbi, parseAbiItem, formatEther, maxUint256 } from 'viem';
 import { useConfig } from '../../hooks/useConfig';
 import { useParams } from '@solidjs/router';
 
@@ -72,8 +72,8 @@ export default function Deployment(props: DeploymentProps) {
 
   const { appId } = useParams();
   const { config } = useConfig();
-  const baseUrl = () => config.baseUrl;
-  const apiKey = () => config.apiKey;
+  const baseUrl = () => config().baseUrl;
+  const apiKey = () => config().apiKey;
 
   const [tokenAddr, { refetch: refetchTokenAddr }] = createResource([], async () => {
     const tokenAddr = await client.readContract({
@@ -186,6 +186,16 @@ export default function Deployment(props: DeploymentProps) {
     } finally {
       setIsToggling(false);
     }
+  };
+
+  const formatAllowance = (allowance: bigint | undefined) => {
+    if (!allowance) {
+      return '0';
+    }
+    if (allowance === maxUint256) {
+      return 'Unlimited';
+    }
+    return formatEther(allowance);
   };
 
   return (
@@ -325,14 +335,12 @@ export default function Deployment(props: DeploymentProps) {
 
           {/* Allowance Card */}
           <InfoCard title="Vault Allowance">
-            <Show when={allowance() !== undefined} fallback={<LoadingText />}>
+            <Suspense fallback={<LoadingText />}>
               <div class="space-y-1">
-                <div class="text-2xl font-bold text-gray-900">
-                  {allowance() ? formatEther(allowance() as bigint) : '0'}
-                </div>
+                <div class="text-2xl font-bold text-gray-900">{formatAllowance(allowance())}</div>
                 <div class="text-xs text-gray-500">{allowance()?.toString() || '0'} wei</div>
               </div>
-            </Show>
+            </Suspense>
           </InfoCard>
         </div>
 

@@ -61,6 +61,7 @@ export default function ApplyStrategyStep() {
     return Object.keys(deployments()).map((name) => ({
       id: name,
       label: name,
+      data: null,
     }));
   };
 
@@ -136,8 +137,8 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
   const handleSetClaimRoot = async (root: `0x${string}`, configuration: `0x${string}`) => {
     // Call API to set claim root via relay
     const { txHash } = await setClaimRoot(
-      config.baseUrl,
-      config.apiKey,
+      config().baseUrl,
+      config().apiKey,
       props.appId,
       props.name,
       props.deployment.roles.projectAdmin,

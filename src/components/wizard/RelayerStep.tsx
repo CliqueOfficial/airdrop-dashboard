@@ -61,7 +61,7 @@ export default function RelayerStep(props: RelayerStepProps) {
   const [createSuccess, setCreateSuccess] = createSignal(false);
 
   const [relayers, { refetch }] = createResource(
-    () => ({ appId: props.appConf.appId, baseUrl: config.baseUrl, apiKey: config.apiKey }),
+    () => ({ appId: props.appConf.appId, baseUrl: config().baseUrl, apiKey: config().apiKey }),
     async ({ appId, baseUrl, apiKey }) => {
       if (!appId) {
         console.log('No appId provided');
@@ -99,8 +99,8 @@ export default function RelayerStep(props: RelayerStepProps) {
         props.appConf.appId,
         chainIdNum,
         online(),
-        config.baseUrl,
-        config.apiKey
+        config().baseUrl,
+        config().apiKey
       );
 
       setCreateSuccess(true);

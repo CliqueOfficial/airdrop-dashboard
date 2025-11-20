@@ -114,8 +114,8 @@ export const useLinearPenaltyConf = ({
     const currentClient = client();
     if (!currentClient) throw new Error('Client not initialized');
     const txHash = await callSetPenaltyConfApi(
-      config.baseUrl,
-      config.apiKey,
+      config().baseUrl,
+      config().apiKey,
       appId(),
       deployment(),
       projectAdmin(),

@@ -147,8 +147,8 @@ export const useStreamPreset = ({
 
     // Call API to submit transaction
     const txHash = await callSetPresetApi(
-      config.baseUrl,
-      config.apiKey,
+      config().baseUrl,
+      config().apiKey,
       appId(),
       deployment(),
       deployer(),

@@ -84,7 +84,7 @@ export default function RpcPage() {
 
   // Resource to fetch RPC list
   const [rpcList, { refetch }] = createResource(
-    () => ({ baseUrl: config.baseUrl, apiKey: config.apiKey }),
+    () => ({ baseUrl: config().baseUrl, apiKey: config().apiKey }),
     async ({ baseUrl, apiKey }) => {
       if (!baseUrl || !apiKey) return [];
       return listRpc(baseUrl, apiKey);
@@ -107,7 +107,7 @@ export default function RpcPage() {
     setErrorMessage('');
 
     try {
-      await setRpc(config.baseUrl, config.apiKey, {
+      await setRpc(config().baseUrl, config().apiKey, {
         chainId: chain,
         rpcUrl: url,
       });
@@ -134,7 +134,7 @@ export default function RpcPage() {
     setErrorMessage('');
 
     try {
-      await clearProvider(config.baseUrl, config.apiKey);
+      await clearProvider(config().baseUrl, config().apiKey);
       setSuccessMessage('All RPC configurations cleared successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
       setShowDeleteConfirm(false);
