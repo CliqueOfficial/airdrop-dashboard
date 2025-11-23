@@ -1,8 +1,8 @@
-import { Accessor, createMemo, createResource } from 'solid-js';
+import { Accessor, createMemo, createResource, useContext } from 'solid-js';
 import LinearPenaltyHookAbi from '../abi/LinearPenaltyHook';
 import { PublicClient, TransactionReceipt } from 'viem';
 import { useConfig } from './useConfig';
-import { createPublicClient } from '../util';
+import { ClientContext } from './context/ClientContext';
 
 export interface LinearPenaltyConf {
   beginTime: bigint;
@@ -93,15 +93,25 @@ export const useLinearPenaltyConf = ({
   projectAdmin,
 }: UseLinearPenaltyConfProps) => {
   const { config } = useConfig();
-  const client = createMemo(() => createPublicClient(chainId().toString(), rpcUrl()));
+  const clientCtx = useContext(ClientContext);
+  const client = createMemo(() => {
+    clientCtx.defineChain(chainId().toString(), rpcUrl());
+    return clientCtx.getClient(chainId().toString());
+  });
 
   const [data, { refetch }] = createResource(
     () => {
-      if (!client() || !contractAddress() || !configurationId() || !chainId() || !rpcUrl()) {
+      if (
+        !client()?.asEvmClient() ||
+        !contractAddress() ||
+        !configurationId() ||
+        !chainId() ||
+        !rpcUrl()
+      ) {
         return undefined;
       }
       return {
-        client: client()!,
+        client: client()?.asEvmClient()!,
         contractAddress: contractAddress(),
         configurationId: configurationId(),
       };
@@ -111,7 +121,7 @@ export const useLinearPenaltyConf = ({
   );
 
   const update = async (penaltyConf: LinearPenaltyConf): Promise<TransactionReceipt> => {
-    const currentClient = client();
+    const currentClient = client()?.asEvmClient();
     if (!currentClient) throw new Error('Client not initialized');
     const txHash = await callSetPenaltyConfApi(
       config().baseUrl,

@@ -8,12 +8,12 @@ import {
   useContext,
 } from 'solid-js';
 import { DeploymentContext } from '../../../../hooks/context/Deployment';
-import { createPublicClient } from '../../../../util';
 import LinearPenaltyHookAbi from '../../../../abi/LinearPenaltyHook';
 import { encodeAbiParameters, keccak256, parseEther, toBytes } from 'viem';
 import { ConfigurationContext } from '../../../../hooks/context/Configuration';
 import Spin from '../../../Spin';
 import { createStore } from 'solid-js/store';
+import { ClientContext } from '../../../../hooks/context/ClientContext';
 
 interface LinearPenaltyHookProps {
   allocatedAmount: Accessor<bigint>;
@@ -24,7 +24,11 @@ export default function LinearPenaltyHook(props: LinearPenaltyHookProps) {
   const { roles, chainId, rpcUrl } = useContext(DeploymentContext)!;
   const { configuration, configurationName } = useContext(ConfigurationContext)!;
   const linearPenaltyHookAddr = () => roles()['linearPenaltyHook'];
-  const client = createMemo(() => createPublicClient(chainId().toString(), rpcUrl()));
+  const clientCtx = useContext(ClientContext);
+  const client = createMemo(() => {
+    clientCtx.defineChain(chainId().toString(), rpcUrl());
+    return clientCtx.getClient(chainId().toString());
+  });
 
   const now = BigInt(Date.now()) / 1000n;
 
@@ -41,7 +45,7 @@ export default function LinearPenaltyHook(props: LinearPenaltyHookProps) {
     },
 
     async ({ client, linearPenaltyHookAddr, allocatedAmount }) => {
-      return client.readContract({
+      return client.asEvmClient()!.readContract({
         address: linearPenaltyHookAddr,
         abi: LinearPenaltyHookAbi,
         functionName: 'getPenalty',

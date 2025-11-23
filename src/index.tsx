@@ -8,6 +8,7 @@ import App from './app';
 import { HashRouter } from '@solidjs/router';
 import { routes } from './routes';
 import { ConfigProvider } from './hooks/context/ConfigContext';
+import { ClientContextProvider } from './hooks/context/ClientContext';
 
 const root = document.getElementById('root');
 
@@ -22,7 +23,9 @@ render(
     <HashRouter
       root={(props) => (
         <ConfigProvider>
-          <App>{props.children as Element}</App>
+          <ClientContextProvider>
+            <App>{props.children as Element}</App>
+          </ClientContextProvider>
         </ConfigProvider>
       )}
     >

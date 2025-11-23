@@ -1,8 +1,8 @@
-import { type Accessor, createMemo, createResource } from 'solid-js';
+import { type Accessor, createMemo, createResource, useContext } from 'solid-js';
 import type { PublicClient, TransactionReceipt } from 'viem';
 import { useConfig } from './useConfig';
-import { createPublicClient } from '../util';
 import CliqueLockHookAbi from '../abi/CliqueLockHook';
+import { ClientContext } from './context/ClientContext';
 
 export interface StreamPreset {
   startTime: bigint;
@@ -113,13 +113,17 @@ export const useStreamPreset = ({
   deployer,
 }: UseStreamPresetProps) => {
   const { config } = useConfig();
-  const client = createMemo(() => createPublicClient(chainId().toString(), rpcUrl()));
+  const clientCtx = useContext(ClientContext);
+  const client = createMemo(() => {
+    clientCtx.defineChain(chainId().toString(), rpcUrl());
+    return clientCtx.getClient(chainId().toString());
+  });
 
   // Read stream preset from chain
   const [data, { refetch }] = createResource(
     () => {
       if (
-        !client() ||
+        !client()?.asEvmClient() ||
         !contractAddress() ||
         !distributorAddress() ||
         !configurationId() ||
@@ -130,7 +134,7 @@ export const useStreamPreset = ({
       }
 
       return {
-        client: client()!,
+        client: client()?.asEvmClient()!,
         contractAddress: contractAddress(),
         distributorAddress: distributorAddress(),
         configurationId: configurationId(),
@@ -142,7 +146,7 @@ export const useStreamPreset = ({
 
   // Update stream preset
   const update = async (preset: StreamPreset): Promise<TransactionReceipt> => {
-    const currentClient = client();
+    const currentClient = client()?.asEvmClient();
     if (!currentClient) throw new Error('Client not initialized');
 
     // Call API to submit transaction

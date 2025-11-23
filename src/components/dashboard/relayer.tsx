@@ -9,11 +9,11 @@ import {
   useContext,
 } from 'solid-js';
 import { Relayer } from '../../types';
-import { createPublicClient } from '../../util';
 import { DeploymentContext } from '../../hooks/context/Deployment';
 import { formatEther } from 'viem';
 import { useAppConf } from '../../hooks/useAppConf';
 import { AppConfContext } from '../../hooks/context/AppConf';
+import { ClientContext } from '../../hooks/context/ClientContext';
 
 interface RelayersProps {
   appId: string;
@@ -174,13 +174,15 @@ function RelayerCard(props: {
   truncateAddress: (addr: string) => string;
 }) {
   const { appConf, deployments } = useContext(AppConfContext)!;
+  const clientCtx = useContext(ClientContext);
 
   const client = createMemo(() => {
     if (!deployments?.()) return undefined;
     const deployment = Object.values(deployments?.() || {}).find(
       (deployment) => deployment.chainId === props.relayer.chainId
     );
-    return createPublicClient(deployment!.chainId, deployment!.rpcUrl);
+    clientCtx.defineChain(deployment!.chainId.toString(), deployment!.rpcUrl);
+    return clientCtx.getClient(deployment!.chainId.toString())?.asEvmClient();
   });
 
   const [balance] = createResource(

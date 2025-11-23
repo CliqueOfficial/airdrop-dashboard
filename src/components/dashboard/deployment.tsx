@@ -1,10 +1,25 @@
-import { Accessor, createResource, createSignal, Show, Suspense } from 'solid-js';
+import {
+  Accessor,
+  createMemo,
+  createResource,
+  createSignal,
+  Show,
+  Suspense,
+  useContext,
+} from 'solid-js';
 import { type AppConf, type Deployment } from '../../types';
-import { createPublicClient } from '../../util';
 import DistributorAbi from '../../abi/Distributor';
-import { parseAbi, parseAbiItem, formatEther, maxUint256 } from 'viem';
+import { parseAbi, parseAbiItem, formatEther, maxUint256, formatUnits } from 'viem';
 import { useConfig } from '../../hooks/useConfig';
 import { useParams } from '@solidjs/router';
+import { ClientContext } from '../../hooks/context/ClientContext';
+import {
+  findAssociatedTokenPda,
+  getTokenCodec,
+  TOKEN_PROGRAM_ADDRESS,
+} from '@solana-program/token';
+import { address, Address, assertAccountExists, fetchEncodedAccount } from '@solana/kit';
+import { getMerkleDistributorCodec } from '../../generated/merkle_distributor';
 
 interface DeploymentProps {
   name: string;
@@ -66,8 +81,12 @@ const unpause = async (
 };
 
 export default function Deployment(props: DeploymentProps) {
-  const client = createPublicClient(props.deployment.chainId, props.deployment.rpcUrl)!;
-  const contractAddress = props.deployment.roles.contract as `0x${string}`;
+  const clinetCtx = useContext(ClientContext);
+  const client = createMemo(() => {
+    clinetCtx.defineChain(props.deployment.chainId.toString(), props.deployment.rpcUrl);
+    return clinetCtx.getClient(props.deployment.chainId.toString());
+  });
+  const contractAddress = props.deployment.roles.contract;
   const projectAdmin = props.deployment.roles.projectAdmin as `0x${string}`;
 
   const { appId } = useParams();
@@ -75,69 +94,166 @@ export default function Deployment(props: DeploymentProps) {
   const baseUrl = () => config().baseUrl;
   const apiKey = () => config().apiKey;
 
-  const [tokenAddr, { refetch: refetchTokenAddr }] = createResource([], async () => {
-    const tokenAddr = await client.readContract({
-      address: contractAddress,
-      abi: DistributorAbi,
-      functionName: 'token',
-    });
-    return tokenAddr;
-  });
+  const [tokenAddr, { refetch: refetchTokenAddr }] = createResource(
+    () => client(),
+    async (client) => {
+      if (client.chainId.startsWith('sol:')) {
+        return props.deployment.roles['mint'];
+      } else {
+        const tokenAddr = await client.asEvmClient()!.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: DistributorAbi,
+          functionName: 'token',
+        });
+        return tokenAddr;
+      }
+    }
+  );
 
-  const [vault, { refetch: refetchVault }] = createResource([], async () => {
-    const vault = await client.readContract({
-      address: contractAddress,
-      abi: DistributorAbi,
-      functionName: 'vault',
-    });
-    return vault;
-  });
+  const [tokenDecimals] = createResource(
+    () => {
+      if (!client() || !tokenAddr()) return undefined;
+      return {
+        client: client()!,
+        tokenAddr: tokenAddr()!,
+      };
+    },
+    async ({ client, tokenAddr }) => {
+      if (client.chainId.startsWith('sol:')) {
+        return 9;
+      } else {
+        const decimals = await client.asEvmClient()!.readContract({
+          address: tokenAddr as `0x${string}`,
+          abi: parseAbi(['function decimals() view returns (uint8)' as const]),
+          functionName: 'decimals',
+        });
+        return decimals;
+      }
+    }
+  );
 
-  const [signer, { refetch: refetchSigner }] = createResource([], async () => {
-    const signer = await client.readContract({
-      address: contractAddress,
-      abi: DistributorAbi,
-      functionName: 'signer',
-    });
-    return signer;
-  });
+  const [vault, { refetch: refetchVault }] = createResource(
+    () => client(),
+    async (client) => {
+      if (client.chainId.startsWith('sol:')) {
+        return props.deployment.roles['vault'];
+      } else {
+        const vault = await client.asEvmClient()!.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: DistributorAbi,
+          functionName: 'vault',
+        });
+        return vault;
+      }
+    }
+  );
 
-  const [active, { refetch: refetchActive }] = createResource([], async () => {
-    const active = await client.readContract({
-      address: contractAddress,
-      abi: DistributorAbi,
-      functionName: 'active',
-    });
-    return active;
-  });
+  const [signer, { refetch: refetchSigner }] = createResource(
+    () => client(),
+    async (client) => {
+      if (client.chainId.startsWith('sol:')) {
+        return props.deployment.roles['signer'];
+      } else {
+        const signer = await client.asEvmClient()!.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: DistributorAbi,
+          functionName: 'signer',
+        });
+        return signer;
+      }
+    }
+  );
+
+  const [active, { refetch: refetchActive }] = createResource(
+    () => client(),
+    async (client) => {
+      if (client.chainId.startsWith('sol:')) {
+        const accountData = await fetchEncodedAccount(
+          client.asSolanaClient()!,
+          address(contractAddress)
+        );
+        if (!accountData.exists) {
+          return false;
+        }
+        const codec = getMerkleDistributorCodec();
+        const distributorData = codec.decode(accountData.data);
+        return distributorData.active;
+      } else {
+        const active = await client.asEvmClient()!.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: DistributorAbi,
+          functionName: 'active',
+        });
+        return active;
+      }
+    }
+  );
 
   const [allowance, { refetch: refetchAllowance }] = createResource(
-    () => ({ tokenAddr: tokenAddr(), vault: vault() }),
-    async ({ tokenAddr, vault }) => {
-      if (!tokenAddr || !vault) return 0n;
-      const allowance = await client.readContract({
-        address: tokenAddr as `0x${string}`,
-        abi: parseAbi([
-          'function allowance(address owner, address spender) view returns (uint256)' as const,
-        ]),
-        functionName: 'allowance',
-        args: [vault as `0x${string}`, contractAddress],
-      });
-      return allowance;
+    () => {
+      if (!client() || !tokenAddr() || !vault()) return undefined;
+      return {
+        client: client()!,
+        tokenAddr: tokenAddr() as `0x${string}`,
+        vault: vault() as `0x${string}`,
+      };
+    },
+    async ({ client, tokenAddr, vault }) => {
+      if (client.chainId.startsWith('sol:')) {
+        const vaultAta = await findAssociatedTokenPda({
+          mint: address(props.deployment.roles['mint']!),
+          owner: address(vault),
+          tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        });
+        const tokenAccount = await fetchEncodedAccount(client.asSolanaClient()!, vaultAta[0]);
+        if (!tokenAccount.exists) {
+          return 0n;
+        }
+        const codec = getTokenCodec();
+        const tokenAccountData = codec.decode(tokenAccount.data);
+        return tokenAccountData.delegatedAmount;
+      } else {
+        const allowance = await client.asEvmClient()!.readContract({
+          address: tokenAddr as `0x${string}`,
+          abi: parseAbi([
+            'function allowance(address owner, address spender) view returns (uint256)' as const,
+          ]),
+          functionName: 'allowance',
+          args: [vault as `0x${string}`, contractAddress as `0x${string}`],
+        });
+        return allowance;
+      }
     }
   );
 
   const [balance, { refetch: refetchBalance }] = createResource(
-    () => ({ tokenAddr: tokenAddr(), vault: vault() }),
-    async ({ tokenAddr, vault }) => {
-      if (!tokenAddr || !vault) return 0n;
-      const balance = await client.readContract({
-        address: tokenAddr as `0x${string}`,
-        abi: parseAbi(['function balanceOf(address owner) view returns (uint256)' as const]),
-        functionName: 'balanceOf',
-        args: [vault as `0x${string}`],
-      });
-      return balance;
+    () => {
+      if (!client() || !tokenAddr() || !vault()) return undefined;
+      return {
+        client: client()!,
+        tokenAddr: tokenAddr()!,
+        vault: vault()!,
+      };
+    },
+    async ({ client, tokenAddr, vault }) => {
+      if (client.chainId.startsWith('sol:')) {
+        const vaultAta = await findAssociatedTokenPda({
+          mint: address(props.deployment.roles['mint']!),
+          owner: address(vault),
+          tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        });
+
+        const balance = await client.asSolanaClient()!.getTokenAccountBalance(vaultAta[0]).send();
+        return BigInt(balance.value.amount);
+      } else {
+        const balance = await client.asEvmClient()!.readContract({
+          address: tokenAddr as `0x${string}`,
+          abi: parseAbi(['function balanceOf(address owner) view returns (uint256)' as const]),
+          functionName: 'balanceOf',
+          args: [vault as `0x${string}`],
+        });
+        return balance;
+      }
     }
   );
 
@@ -188,14 +304,14 @@ export default function Deployment(props: DeploymentProps) {
     }
   };
 
-  const formatAllowance = (allowance: bigint | undefined) => {
+  const formatAllowance = (allowance: bigint | undefined, decimals: number) => {
     if (!allowance) {
       return '0';
     }
     if (allowance === maxUint256) {
       return 'Unlimited';
     }
-    return formatEther(allowance);
+    return formatUnits(allowance, decimals);
   };
 
   const formatAllowanceWei = (allowance: bigint | undefined) => {
@@ -333,21 +449,23 @@ export default function Deployment(props: DeploymentProps) {
 
           {/* Balance Card */}
           <InfoCard title="Vault Balance">
-            <Show when={balance() !== undefined} fallback={<LoadingText />}>
+            <Suspense fallback={<LoadingText />}>
               <div class="space-y-1">
                 <div class="text-2xl font-bold text-gray-900">
-                  {balance() ? formatEther(balance() as bigint) : '0'}
+                  {balance() ? formatUnits(balance() as bigint, tokenDecimals()!) : '0'}
                 </div>
                 <div class="text-xs text-gray-500">{balance()?.toString() || '0'} wei</div>
               </div>
-            </Show>
+            </Suspense>
           </InfoCard>
 
           {/* Allowance Card */}
           <InfoCard title="Vault Allowance">
             <Suspense fallback={<LoadingText />}>
               <div class="space-y-1">
-                <div class="text-2xl font-bold text-gray-900">{formatAllowance(allowance())}</div>
+                <div class="text-2xl font-bold text-gray-900">
+                  {formatAllowance(allowance(), tokenDecimals()!)}
+                </div>
                 <div class="text-xs text-gray-500">{formatAllowanceWei(allowance())} wei</div>
               </div>
             </Suspense>

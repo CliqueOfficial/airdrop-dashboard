@@ -1,11 +1,19 @@
-import { createResource, createSignal, For, Show, Suspense, useContext } from 'solid-js';
+import {
+  createMemo,
+  createResource,
+  createSignal,
+  For,
+  Show,
+  Suspense,
+  useContext,
+} from 'solid-js';
 import { AppConf, Deployment } from '../../types';
 import TabView from '../TabView';
 import { useConfig } from '../../hooks/useConfig';
-import { createPublicClient } from '../../util';
 import DistributorAbi from '../../abi/Distributor';
 import { keccak256, PublicClient, toBytes } from 'viem';
 import { AppConfContext } from '../../hooks/context/AppConf';
+import { ClientContext } from '../../hooks/context/ClientContext';
 
 interface SetFeeRequest {
   appId: string;
@@ -148,39 +156,54 @@ interface DeploymentConfigurationPanelProps {
 
 function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) {
   const contractAddress = props.deployment.roles['contract'] as `0x${string}`;
-  const client = createPublicClient(props.deployment.chainId, props.deployment.rpcUrl)!;
+  const clientCtx = useContext(ClientContext);
+  const client = createMemo(() => {
+    clientCtx.defineChain(props.deployment.chainId.toString(), props.deployment.rpcUrl);
+    return clientCtx.getClient(props.deployment.chainId.toString())!;
+  });
   const configurationIds = Object.keys(props.deployment.extra.configurations || {});
 
-  const [configuredRoots] = createResource([], async () => {
-    const configurationIdPromises = Object.entries(props.roots).map(async ([name, root]) => {
-      const configurationId = await client.readContract({
-        address: contractAddress as `0x${string}`,
-        abi: DistributorAbi,
-        functionName: 'configurationId',
-        args: [root as `0x${string}`],
-      });
-
-      const id = configurationIds.find((id) => keccak256(toBytes(id)) === configurationId);
-
+  const [configuredRoots] = createResource(
+    () => {
+      if (!client()?.asEvmClient() || !contractAddress) {
+        return undefined;
+      }
       return {
-        name,
-        root,
-        id,
+        client: client()?.asEvmClient()!,
+        contractAddress: contractAddress,
       };
-    });
-    const roots = await Promise.all(configurationIdPromises);
-    return roots
-      .filter((root) => root.id)
-      .map((root) => ({
-        name: root.name,
-        root: root.root,
-      }));
-  });
+    },
+    async ({ client, contractAddress }) => {
+      const configurationIdPromises = Object.entries(props.roots).map(async ([name, root]) => {
+        const configurationId = await client.readContract({
+          address: contractAddress as `0x${string}`,
+          abi: DistributorAbi,
+          functionName: 'configurationId',
+          args: [root as `0x${string}`],
+        });
+
+        const id = configurationIds.find((id) => keccak256(toBytes(id)) === configurationId);
+
+        return {
+          name,
+          root,
+          id,
+        };
+      });
+      const roots = await Promise.all(configurationIdPromises);
+      return roots
+        .filter((root) => root.id)
+        .map((root) => ({
+          name: root.name,
+          root: root.root,
+        }));
+    }
+  );
 
   return (
     <Suspense>
       <FeeConfigurationPanel
-        client={client}
+        client={client()?.asEvmClient()!}
         contractAddress={contractAddress}
         root={'0x0000000000000000000000000000000000000000000000000000000000000000'}
         rootName="Global"
@@ -191,7 +214,7 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
       <For each={configuredRoots()}>
         {(root) => (
           <FeeConfigurationPanel
-            client={client}
+            client={client()?.asEvmClient()!}
             contractAddress={contractAddress}
             root={root.root as `0x${string}`}
             rootName={root.name}

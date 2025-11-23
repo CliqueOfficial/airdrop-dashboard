@@ -1,7 +1,7 @@
 import { createConfig, getPublicClient } from '@wagmi/core';
 import { defineChain, http } from 'viem';
 
-export const createPublicClient = (chainId: string, rpcUrl: string) => {
+export const createEvmPublicClient = (chainId: string, rpcUrl: string) => {
   const chain = defineChain({
     id: parseInt(chainId),
     name: 'Chain ' + chainId,

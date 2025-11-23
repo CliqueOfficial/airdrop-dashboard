@@ -17,9 +17,9 @@ import { FaSolidPlus } from 'solid-icons/fa';
 import { keccak256, toBytes } from 'viem';
 import { useConfig } from '../../hooks/useConfig';
 import DistributorAbi from '../../abi/Distributor';
-import { createPublicClient } from '../../util';
 import TabView from '../TabView';
 import { AppConfContext } from '../../hooks/context/AppConf';
+import { ClientContext } from '../../hooks/context/ClientContext';
 
 const setClaimRoot = async (
   baseUrl: string,
@@ -91,9 +91,11 @@ interface DeploymentConfigurationPanelProps {
 function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) {
   const { config } = useConfig();
   const contractAddress = createMemo(() => props.deployment.roles.contract);
-  const client = createMemo(() =>
-    createPublicClient(props.deployment.chainId, props.deployment.rpcUrl)
-  );
+  const clientCtx = useContext(ClientContext);
+  const client = createMemo(() => {
+    clientCtx.defineChain(props.deployment.chainId.toString(), props.deployment.rpcUrl);
+    return clientCtx.getClient(props.deployment.chainId.toString());
+  });
   const availableConfigurationId = createMemo(() =>
     Object.keys(props.deployment.extra.configurations || {})
   );
@@ -106,7 +108,7 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
 
   const [configuredRoots, { refetch }] = createResource(
     () => ({
-      client: client(),
+      client: client()?.asEvmClient(),
       contractAddress: contractAddress(),
       roots: props.roots(),
       availableConfigurationId: availableConfigurationId(),
@@ -147,7 +149,7 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
     );
 
     // Wait for transaction receipt
-    const currentClient = client();
+    const currentClient = client()?.asEvmClient();
     if (!currentClient) {
       throw new Error('Client not initialized');
     }

@@ -3,8 +3,8 @@ import { keccak256, type PublicClient, type TransactionReceipt, toBytes, parseEt
 import { Configuration } from '../types';
 import DistributorAbi from '../abi/Distributor';
 import { useConfig } from './useConfig';
-import { createPublicClient } from '../util';
 import { DeploymentContext } from './context/Deployment';
+import { ClientContext } from './context/ClientContext';
 
 interface UseConfigurationProps {
   contractAddress: Accessor<`0x${string}`>;
@@ -86,13 +86,17 @@ export const useConfiguration = ({
 }: UseConfigurationProps) => {
   const { config } = useConfig();
   const { roles } = useContext(DeploymentContext)!;
-  const client = createMemo(() => createPublicClient(chainId().toString(), rpcUrl()));
+  const clientCtx = useContext(ClientContext);
+  const client = createMemo(() => {
+    clientCtx.defineChain(chainId().toString(), rpcUrl());
+    return clientCtx.getClient(chainId().toString());
+  });
 
   // Read configuration from chain
   const [data, { refetch }] = createResource(
     () => {
       if (
-        !client() ||
+        !client()?.asEvmClient() ||
         !contractAddress() ||
         !configurationName() ||
         !hookReverseMap() ||
@@ -103,7 +107,7 @@ export const useConfiguration = ({
       }
 
       return {
-        client: client()!,
+        client: client()?.asEvmClient()!,
         contractAddress: contractAddress(),
         configurationName: configurationName(),
         hookReverseMap: hookReverseMap(),
@@ -121,7 +125,7 @@ export const useConfiguration = ({
 
   // Update configuration
   const update = async (configuration: Configuration): Promise<TransactionReceipt> => {
-    const currentClient = client();
+    const currentClient = client()?.asEvmClient();
     if (!currentClient) throw new Error('Client not initialized');
 
     const applyingConfiguration = {
