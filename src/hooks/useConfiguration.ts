@@ -88,8 +88,10 @@ export const useConfiguration = ({
   const { roles } = useContext(DeploymentContext)!;
   const clientCtx = useContext(ClientContext);
   const client = createMemo(() => {
-    clientCtx.defineChain(chainId().toString(), rpcUrl());
-    return clientCtx.getClient(chainId().toString());
+    return clientCtx.getClient({
+      chainId: chainId().toString(),
+      rpcUrl: rpcUrl(),
+    });
   });
 
   // Read configuration from chain

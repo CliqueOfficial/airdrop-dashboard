@@ -2,6 +2,7 @@ import { createSolanaRpc } from '@solana/kit';
 
 import { createContext, JSX } from 'solid-js';
 import { createEvmPublicClient } from '../../util';
+import { Deployment } from '../../types';
 
 interface GeneralClient {
   chainId: string;
@@ -10,15 +11,13 @@ interface GeneralClient {
 }
 
 interface ClientContextProps {
-  getClient: (chainId: string) => GeneralClient | undefined;
-  defineChain: (chainId: string, rpcUrl: string) => void;
+  getClient: (options: { chainId: string; rpcUrl?: string }) => GeneralClient | undefined;
 }
 
 export const ClientContext = createContext<ClientContextProps>({
-  getClient: (chainId: string) => {
+  getClient: (options: { chainId: string; rpcUrl?: string }) => {
     return undefined;
   },
-  defineChain: (chainId: string, rpcUrl: string) => {},
 });
 
 export const ClientContextProvider = (props: { children: JSX.Element }) => {
@@ -47,12 +46,12 @@ export const ClientContextProvider = (props: { children: JSX.Element }) => {
       });
     }
   };
-  const getClient = (chainId: string) => {
-    return clients.get(chainId);
+
+  const getClient = (options: { chainId: string; rpcUrl?: string }) => {
+    if (options.rpcUrl) {
+      defineChain(options.chainId, options.rpcUrl);
+    }
+    return clients.get(options.chainId);
   };
-  return (
-    <ClientContext.Provider value={{ getClient, defineChain }}>
-      {props.children}
-    </ClientContext.Provider>
-  );
+  return <ClientContext.Provider value={{ getClient }}>{props.children}</ClientContext.Provider>;
 };

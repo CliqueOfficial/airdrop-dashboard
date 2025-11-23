@@ -95,8 +95,10 @@ export const useLinearPenaltyConf = ({
   const { config } = useConfig();
   const clientCtx = useContext(ClientContext);
   const client = createMemo(() => {
-    clientCtx.defineChain(chainId().toString(), rpcUrl());
-    return clientCtx.getClient(chainId().toString());
+    return clientCtx.getClient({
+      chainId: chainId().toString(),
+      rpcUrl: rpcUrl(),
+    });
   });
 
   const [data, { refetch }] = createResource(

@@ -115,8 +115,10 @@ export const useStreamPreset = ({
   const { config } = useConfig();
   const clientCtx = useContext(ClientContext);
   const client = createMemo(() => {
-    clientCtx.defineChain(chainId().toString(), rpcUrl());
-    return clientCtx.getClient(chainId().toString());
+    return clientCtx.getClient({
+      chainId: chainId().toString(),
+      rpcUrl: rpcUrl(),
+    });
   });
 
   // Read stream preset from chain

@@ -26,8 +26,10 @@ export default function LinearPenaltyHook(props: LinearPenaltyHookProps) {
   const linearPenaltyHookAddr = () => roles()['linearPenaltyHook'];
   const clientCtx = useContext(ClientContext);
   const client = createMemo(() => {
-    clientCtx.defineChain(chainId().toString(), rpcUrl());
-    return clientCtx.getClient(chainId().toString());
+    return clientCtx.getClient({
+      chainId: chainId().toString(),
+      rpcUrl: rpcUrl(),
+    });
   });
 
   const now = BigInt(Date.now()) / 1000n;

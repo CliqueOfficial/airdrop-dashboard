@@ -181,8 +181,12 @@ function RelayerCard(props: {
     const deployment = Object.values(deployments?.() || {}).find(
       (deployment) => deployment.chainId === props.relayer.chainId
     );
-    clientCtx.defineChain(deployment!.chainId.toString(), deployment!.rpcUrl);
-    return clientCtx.getClient(deployment!.chainId.toString())?.asEvmClient();
+    return clientCtx
+      .getClient({
+        chainId: deployment!.chainId.toString(),
+        rpcUrl: deployment!.rpcUrl,
+      })
+      ?.asEvmClient();
   });
 
   const [balance] = createResource(

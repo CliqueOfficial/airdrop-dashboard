@@ -4,8 +4,11 @@ import { createEffect, createMemo, createResource, createSignal, For, Suspense }
 import TabView from '../TabView';
 import { useConfig } from '../../hooks/useConfig';
 import EditableListView from '../EditableListView';
-import { formatUnits } from 'viem';
+import { formatUnits, parseAbi } from 'viem';
 import { TbArrowLeft, TbArrowRight } from 'solid-icons/tb';
+import { useContext } from 'solid-js';
+import { ClientContext } from '../../hooks/context/ClientContext';
+import { AppConfContext } from '../../hooks/context/AppConf';
 
 interface BatchProps {
   appId: string;
@@ -21,7 +24,7 @@ interface BatchStat {
 
 export default function BatchOverview(props: BatchProps) {
   const { config } = useConfig();
-  const [stats, { refetch: refetchStats }] = createResource(async () => {
+  const [stats] = createResource(async () => {
     const response = await fetch(`${config().baseUrl}/admin/stats/${props.appId}`, {
       headers: {
         'Content-Type': 'application/json',
@@ -68,12 +71,6 @@ interface Allocation {
     recipient?: string;
   };
 }
-
-// pub page: Option<NonZeroUsize>,
-// pub cursor: Option<String>,
-// pub page_size: Option<NonZeroUsize>,
-// pub address_handler: Option<String>,
-// pub recipient: Option<String>,
 
 function BatchListView(props: BatchListViewProps) {
   const { config } = useConfig();

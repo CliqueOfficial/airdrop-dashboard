@@ -83,8 +83,10 @@ const unpause = async (
 export default function Deployment(props: DeploymentProps) {
   const clinetCtx = useContext(ClientContext);
   const client = createMemo(() => {
-    clinetCtx.defineChain(props.deployment.chainId.toString(), props.deployment.rpcUrl);
-    return clinetCtx.getClient(props.deployment.chainId.toString());
+    return clinetCtx.getClient({
+      chainId: props.deployment.chainId.toString(),
+      rpcUrl: props.deployment.rpcUrl,
+    });
   });
   const contractAddress = props.deployment.roles.contract;
   const projectAdmin = props.deployment.roles.projectAdmin as `0x${string}`;

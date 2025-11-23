@@ -158,8 +158,10 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
   const contractAddress = props.deployment.roles['contract'] as `0x${string}`;
   const clientCtx = useContext(ClientContext);
   const client = createMemo(() => {
-    clientCtx.defineChain(props.deployment.chainId.toString(), props.deployment.rpcUrl);
-    return clientCtx.getClient(props.deployment.chainId.toString())!;
+    return clientCtx.getClient({
+      chainId: props.deployment.chainId.toString(),
+      rpcUrl: props.deployment.rpcUrl,
+    });
   });
   const configurationIds = Object.keys(props.deployment.extra.configurations || {});
 
