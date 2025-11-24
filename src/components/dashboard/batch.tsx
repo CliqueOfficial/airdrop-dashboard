@@ -1,14 +1,9 @@
-import { useParams } from '@solidjs/router';
-import { useAppConf } from '../../hooks/useAppConf';
 import { createEffect, createMemo, createResource, createSignal, For, Suspense } from 'solid-js';
 import TabView from '../TabView';
 import { useConfig } from '../../hooks/useConfig';
 import EditableListView from '../EditableListView';
-import { formatUnits, parseAbi } from 'viem';
+import { formatUnits } from 'viem';
 import { TbArrowLeft, TbArrowRight } from 'solid-icons/tb';
-import { useContext } from 'solid-js';
-import { ClientContext } from '../../hooks/context/ClientContext';
-import { AppConfContext } from '../../hooks/context/AppConf';
 
 interface BatchProps {
   appId: string;

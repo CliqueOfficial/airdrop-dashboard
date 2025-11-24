@@ -4,10 +4,21 @@ import EditableListView from '../EditableListView';
 import { useConfig } from '../../hooks/useConfig';
 import { useRelayers } from '../../hooks/useRelayers';
 import { AppConfContext } from '../../hooks/context/AppConf';
-import { defineChain, http } from 'viem';
+import { defineChain, http, isAddress as isEvmAddress } from 'viem';
 import { createConfig, getPublicClient } from '@wagmi/core';
 import { ImSpinner8 } from 'solid-icons/im';
 import DefaultHeader from '../editable-list-view/DefaultHeader';
+import { ClientContext } from '../../hooks/context/ClientContext';
+import {
+  address,
+  getAddressEncoder,
+  getBytesEncoder,
+  getProgramDerivedAddress,
+  isAddress as isSolanaAddress,
+  signature,
+} from '@solana/kit';
+import { MERKLE_DISTRIBUTOR_PROGRAM_ADDRESS } from '../../generated/merkle_distributor';
+import { expectAddress } from '../../generated/merkle_distributor/shared';
 
 interface DeploymentParams {
   deployer: string;
@@ -254,44 +265,17 @@ export default function DeploymentStep() {
           const [isDeploying, setIsDeploying] = createSignal(false);
           const [deployError, setDeployError] = createSignal<string | null>(null);
           const [deployStatus, setDeployStatus] = createSignal('');
+          const clientCtx = useContext(ClientContext)!;
 
-          // Create chain config for this deployment
-          const chainConfig = createMemo(() => {
-            if (!deployment.chainId || !deployment.rpcUrl) return null;
-
-            const chain = defineChain({
-              id: parseInt(deployment.chainId),
-              name: 'Chain ' + deployment.chainId,
-              nativeCurrency: {
-                name: 'Chain ' + deployment.chainId,
-                symbol: 'CHAIN' + deployment.chainId,
-                decimals: 18,
-              },
-              rpcUrls: {
-                default: {
-                  http: [deployment.rpcUrl],
-                },
-              },
-            });
-
-            const config = createConfig({
-              chains: [chain],
-              transports: {
-                [parseInt(deployment.chainId)]: http(),
-              },
-            });
-
-            return config;
-          });
-
-          const publicClient = createMemo(() => {
-            const wagmiConfig = chainConfig();
-            if (!wagmiConfig) return null;
-            return getPublicClient(wagmiConfig);
-          });
-
-          const validateAddress = (address: string): boolean => {
-            return /^0x[a-fA-F0-9]{40}$/.test(address);
+          const validateAddress = (addr: string): boolean => {
+            const chainId = deployment.chainId;
+            if (chainId.startsWith('sol:')) {
+              return isSolanaAddress(address(addr));
+            } else {
+              return isEvmAddress(addr, {
+                strict: false,
+              });
+            }
           };
 
           const handleDeploy = async () => {
@@ -353,24 +337,54 @@ export default function DeploymentStep() {
 
               // Step 2: Wait for transaction receipt
               setDeployStatus('Waiting for transaction confirmation...');
-              const client = publicClient();
-              if (!client) {
-                throw new Error('No public client available');
-              }
 
-              const receipt = await client.waitForTransactionReceipt({
-                hash: txHash as `0x${string}`,
-                confirmations: 1,
-              });
+              const chainId = deployment.chainId;
 
-              if (receipt.status !== 'success') {
-                throw new Error('Transaction failed on chain');
-              }
+              let contractAddress: string;
+              const client = clientCtx.getClient({
+                chainId: deployment.chainId,
+                rpcUrl: deployment.rpcUrl,
+              })!;
+              if (chainId.startsWith('sol:')) {
+                const receipt = await client
+                  .asSolanaClient()!
+                  .getTransaction(signature(txHash))
+                  .send();
+                if (!receipt || receipt.meta?.err) {
+                  throw new Error('Transaction failed on chain');
+                }
+                const [pda, bump] = await getProgramDerivedAddress({
+                  programAddress: MERKLE_DISTRIBUTOR_PROGRAM_ADDRESS,
+                  seeds: [
+                    getBytesEncoder().encode(
+                      new Uint8Array([
+                        77, 101, 114, 107, 108, 101, 68, 105, 115, 116, 114, 105, 98, 117, 116, 111,
+                        114,
+                      ])
+                    ),
+                    getAddressEncoder().encode(expectAddress(address(params.deployer))),
+                  ],
+                });
+                contractAddress = pda.toString();
+              } else {
+                if (!client) {
+                  throw new Error('No public client available');
+                }
 
-              // Step 3: Get contract address from receipt
-              const contractAddress = receipt.contractAddress;
-              if (!contractAddress) {
-                throw new Error('No contract address in transaction receipt');
+                const receipt = await client.asEvmClient()!.waitForTransactionReceipt({
+                  hash: txHash as `0x${string}`,
+                  confirmations: 1,
+                });
+
+                if (receipt.status !== 'success') {
+                  throw new Error('Transaction failed on chain');
+                }
+
+                // Step 3: Get contract address from receipt
+                contractAddress = receipt.contractAddress;
+                if (!contractAddress) {
+                  throw new Error('No contract address in transaction receipt');
+                }
               }
 
               setDeployStatus(`Contract deployed at: ${contractAddress}`);

@@ -13,7 +13,24 @@ import { useConfig } from '../../hooks/useConfig';
 import DistributorAbi from '../../abi/Distributor';
 import { keccak256, PublicClient, toBytes } from 'viem';
 import { AppConfContext } from '../../hooks/context/AppConf';
-import { ClientContext } from '../../hooks/context/ClientContext';
+import { ClientContext, GeneralClient } from '../../hooks/context/ClientContext';
+import {
+  address,
+  assertAccountExists,
+  getAddressEncoder,
+  getArrayEncoder,
+  getBytesEncoder,
+  getProgramDerivedAddress,
+  signature,
+} from '@solana/kit';
+import { getBytecode } from '@wagmi/core';
+import {
+  fetchAllClaimRoot,
+  fetchAllMaybeClaimRoot,
+  fetchMaybeFeeConfig,
+  MERKLE_DISTRIBUTOR_PROGRAM_ADDRESS,
+} from '../../generated/merkle_distributor';
+import { expectAddress, expectSome } from '../../generated/merkle_distributor/shared';
 
 interface SetFeeRequest {
   appId: string;
@@ -57,77 +74,107 @@ type FeeInfo =
   | { feeMode: 'SingleTierFeeRate'; data: { feeRate: string; minFee: string; maxFee: string } };
 
 const readFee = async (
-  client: PublicClient,
-  contractAddress: `0x${string}`,
+  client: GeneralClient,
+  contractAddress: string,
   root: `0x${string}`
 ): Promise<FeeInfo> => {
-  const feeModePromise = client.readContract({
-    address: contractAddress as `0x${string}`,
-    abi: DistributorAbi,
-    functionName: 'feeModes',
-    args: [root],
-  });
-  const fixedFeePromise = client.readContract({
-    address: contractAddress as `0x${string}`,
-    abi: DistributorAbi,
-    functionName: 'fixedFees',
-    args: [root],
-  });
-  const singleTierFeeRatePromise = client.readContract({
-    address: contractAddress as `0x${string}`,
-    abi: DistributorAbi,
-    functionName: 'singleTierFeeRates',
-    args: [root],
-  });
+  if (client.chainId.startsWith('sol:')) {
+    const [pda, _] = await getProgramDerivedAddress({
+      programAddress: MERKLE_DISTRIBUTOR_PROGRAM_ADDRESS,
+      seeds: [
+        getBytesEncoder().encode(new Uint8Array([70, 101, 101, 67, 111, 110, 102, 105, 103])),
+        getAddressEncoder().encode(expectAddress(address(contractAddress))),
+        getBytesEncoder().encode(toBytes(keccak256(toBytes('default')))),
+      ],
+    });
+    const feeConfig = await fetchMaybeFeeConfig(client.asSolanaClient()!, address(pda));
+    if (!feeConfig.exists) {
+      return {
+        feeMode: 'Default',
+      };
+    } else {
+      assertAccountExists(feeConfig);
 
-  const [feeMode, fixedFee, singleTierFeeRate] = await Promise.all([
-    feeModePromise,
-    fixedFeePromise,
-    singleTierFeeRatePromise,
-  ]);
+      if (feeConfig.data.feeMode.__kind === 'Fixed') {
+        return {
+          feeMode: 'FixedFee',
+          data: feeConfig.data.feeMode.fields[0].toString(),
+        };
+      } else if (feeConfig.data.feeMode.__kind === 'SingleTier') {
+        return {
+          feeMode: 'SingleTierFeeRate',
+          data: {
+            feeRate: feeConfig.data.feeMode.rate.toString(),
+            minFee: feeConfig.data.feeMode.minFee.toString(),
+            maxFee: feeConfig.data.feeMode.maxFee.toString(),
+          },
+        };
+      } else {
+        throw new Error('Invalid fee mode');
+      }
+    }
+  } else {
+    const feeModePromise = client.asEvmClient()!.readContract({
+      address: contractAddress as `0x${string}`,
+      abi: DistributorAbi,
+      functionName: 'feeModes',
+      args: [root],
+    });
+    const fixedFeePromise = client.asEvmClient()!.readContract({
+      address: contractAddress as `0x${string}`,
+      abi: DistributorAbi,
+      functionName: 'fixedFees',
+      args: [root],
+    });
+    const singleTierFeeRatePromise = client.asEvmClient()!.readContract({
+      address: contractAddress as `0x${string}`,
+      abi: DistributorAbi,
+      functionName: 'singleTierFeeRates',
+      args: [root],
+    });
 
-  console.log({
-    root,
-    feeMode,
-    fixedFee,
-    singleTierFeeRate,
-  });
+    const [feeMode, fixedFee, singleTierFeeRate] = await Promise.all([
+      feeModePromise,
+      fixedFeePromise,
+      singleTierFeeRatePromise,
+    ]);
 
-  if (feeMode === 0) {
-    return {
-      feeMode: 'Default',
-    };
+    if (feeMode === 0) {
+      return {
+        feeMode: 'Default',
+      };
+    }
+
+    if (feeMode === 1) {
+      return {
+        feeMode: 'FixedFee',
+        data: fixedFee.toString(),
+      };
+    }
+
+    if (feeMode === 2) {
+      return {
+        feeMode: 'SingleTierFeeRate',
+        data: {
+          feeRate: singleTierFeeRate[0].toString(),
+          minFee: singleTierFeeRate[1].toString(),
+          maxFee: singleTierFeeRate[2].toString(),
+        },
+      };
+    }
+
+    throw new Error('Invalid fee mode');
   }
-
-  if (feeMode === 1) {
-    return {
-      feeMode: 'FixedFee',
-      data: fixedFee.toString(),
-    };
-  }
-
-  if (feeMode === 2) {
-    return {
-      feeMode: 'SingleTierFeeRate',
-      data: {
-        feeRate: singleTierFeeRate[0].toString(),
-        minFee: singleTierFeeRate[1].toString(),
-        maxFee: singleTierFeeRate[2].toString(),
-      },
-    };
-  }
-
-  throw new Error('Invalid fee mode');
 };
 
 export default function ConfigureFeeStep() {
   const { appConf, deployments, refetch } = useContext(AppConfContext)!;
 
   const tabs = () => {
-    return Object.keys(deployments!()).map((name) => ({
+    return Object.entries(deployments!()).map(([name, data]) => ({
       id: name,
       label: name,
-      data: null,
+      data: data,
     }));
   };
 
@@ -138,7 +185,7 @@ export default function ConfigureFeeStep() {
           <DeploymentConfigurationPanel
             appId={appConf.appId}
             name={tab.id}
-            deployment={deployments!()[tab.id]}
+            deployment={tab.data}
             roots={appConf.extra.root}
           />
         </div>
@@ -157,66 +204,100 @@ interface DeploymentConfigurationPanelProps {
 function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) {
   const contractAddress = props.deployment.roles['contract'] as `0x${string}`;
   const clientCtx = useContext(ClientContext);
-  const client = createMemo(() => {
-    return clientCtx.getClient({
-      chainId: props.deployment.chainId.toString(),
-      rpcUrl: props.deployment.rpcUrl,
-    });
-  });
   const configurationIds = Object.keys(props.deployment.extra.configurations || {});
 
   const [configuredRoots] = createResource(
     () => {
-      if (!client()?.asEvmClient() || !contractAddress) {
+      if (!contractAddress) {
         return undefined;
       }
       return {
-        client: client()?.asEvmClient()!,
         contractAddress: contractAddress,
       };
     },
-    async ({ client, contractAddress }) => {
-      const configurationIdPromises = Object.entries(props.roots).map(async ([name, root]) => {
-        const configurationId = await client.readContract({
-          address: contractAddress as `0x${string}`,
-          abi: DistributorAbi,
-          functionName: 'configurationId',
-          args: [root as `0x${string}`],
+    async ({ contractAddress }) => {
+      const client = clientCtx.getClient({
+        chainId: props.deployment.chainId.toString(),
+        rpcUrl: props.deployment.rpcUrl,
+      })!;
+      if (props.deployment.chainId.startsWith('sol:')) {
+        const roots = Object.values(props.roots);
+        const rootPdas = await Promise.all(
+          roots.map(async (root) => {
+            const [pda, _] = await getProgramDerivedAddress({
+              programAddress: MERKLE_DISTRIBUTOR_PROGRAM_ADDRESS,
+              seeds: [
+                getBytesEncoder().encode(
+                  new Uint8Array([67, 108, 97, 105, 109, 82, 111, 111, 116])
+                ),
+                getAddressEncoder().encode(expectAddress(address(contractAddress))),
+                getBytesEncoder().encode(toBytes(root)),
+              ],
+            });
+            return address(pda);
+          })
+        );
+
+        const claimRoots = await fetchAllMaybeClaimRoot(client.asSolanaClient()!, rootPdas);
+        return Object.entries(props.roots)
+          .map(([name, root], idx) => ({
+            name: name,
+            root: root,
+            id: claimRoots[idx]?.exists ? 'default' : undefined,
+          }))
+          .filter((root) => root.id)
+          .map((root) => ({
+            name: root.name,
+            root: root.root,
+          }));
+      } else {
+        const configurationIdPromises = Object.entries(props.roots).map(async ([name, root]) => {
+          const configurationId = await client.asEvmClient()!.readContract({
+            address: contractAddress as `0x${string}`,
+            abi: DistributorAbi,
+            functionName: 'configurationId',
+            args: [root as `0x${string}`],
+          });
+
+          const id = configurationIds.find((id) => keccak256(toBytes(id)) === configurationId);
+
+          return {
+            name,
+            root,
+            id,
+          };
         });
-
-        const id = configurationIds.find((id) => keccak256(toBytes(id)) === configurationId);
-
-        return {
-          name,
-          root,
-          id,
-        };
-      });
-      const roots = await Promise.all(configurationIdPromises);
-      return roots
-        .filter((root) => root.id)
-        .map((root) => ({
-          name: root.name,
-          root: root.root,
-        }));
+        const roots = await Promise.all(configurationIdPromises);
+        return roots
+          .filter((root) => root.id)
+          .map((root) => ({
+            name: root.name,
+            root: root.root,
+          }));
+      }
     }
   );
 
+  const hasDefault = createMemo(() => {
+    return !props.deployment.chainId.startsWith('sol:');
+  });
+
   return (
     <Suspense>
-      <FeeConfigurationPanel
-        client={client()?.asEvmClient()!}
-        contractAddress={contractAddress}
-        root={'0x0000000000000000000000000000000000000000000000000000000000000000'}
-        rootName="Global"
-        appId={props.appId}
-        deployment={props.deployment}
-        deploymentName={props.name}
-      />
+      <Show when={hasDefault()}>
+        <FeeConfigurationPanel
+          contractAddress={contractAddress}
+          root={'0x0000000000000000000000000000000000000000000000000000000000000000'}
+          rootName="Global"
+          appId={props.appId}
+          deployment={props.deployment}
+          deploymentName={props.name}
+        />
+      </Show>
+
       <For each={configuredRoots()}>
         {(root) => (
           <FeeConfigurationPanel
-            client={client()?.asEvmClient()!}
             contractAddress={contractAddress}
             root={root.root as `0x${string}`}
             rootName={root.name}
@@ -232,7 +313,6 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
 
 interface FeeConfigurationPanelProps {
   root: `0x${string}`;
-  client: PublicClient;
   contractAddress: `0x${string}`;
   rootName: string;
   appId: string;
@@ -244,6 +324,7 @@ type FeeModeType = 'Default' | 'FixedFee' | 'SingleTierFeeRate';
 
 function FeeConfigurationPanel(props: FeeConfigurationPanelProps) {
   const { config } = useConfig();
+  const clientCtx = useContext(ClientContext);
 
   const [feeMode, setFeeMode] = createSignal<FeeModeType>('Default');
   const [fixedFee, setFixedFee] = createSignal<string>('');
@@ -256,7 +337,12 @@ function FeeConfigurationPanel(props: FeeConfigurationPanelProps) {
   const [saveSuccess, setSaveSuccess] = createSignal(false);
 
   const [feeInfo, { refetch }] = createResource(async () => {
-    const info = await readFee(props.client, props.contractAddress, props.root);
+    const client = clientCtx.getClient({
+      chainId: props.deployment.chainId.toString(),
+      rpcUrl: props.deployment.rpcUrl,
+    })!;
+    const info = await readFee(client, props.contractAddress, props.root);
+    console.log({ info });
     if (info.feeMode === 'Default') {
       setFeeMode('Default');
     } else if (info.feeMode === 'FixedFee') {
@@ -306,21 +392,31 @@ function FeeConfigurationPanel(props: FeeConfigurationPanelProps) {
       // Call set-fee API
       const response = await setFee(config().baseUrl, config().apiKey, request);
       const txHash = response.txHash;
+      const client = clientCtx.getClient({
+        chainId: props.deployment.chainId.toString(),
+        rpcUrl: props.deployment.rpcUrl,
+      })!;
 
-      // Wait for transaction receipt
-      const receipt = await props.client.waitForTransactionReceipt({
-        hash: txHash as `0x${string}`,
-      });
-
-      if (receipt.status === 'success') {
-        setSaveSuccess(true);
-        // Refetch the fee info after successful transaction
-        await refetch();
-
-        // Hide success message after 3 seconds
-        setTimeout(() => setSaveSuccess(false), 3000);
+      if (props.deployment.chainId.startsWith('sol:')) {
+        const receipt = await client.asSolanaClient()!.getTransaction(signature(txHash)).send();
+        if (!receipt || receipt.meta?.err) {
+          throw new Error('Transaction failed on chain');
+        } else {
+          setSaveSuccess(true);
+        }
       } else {
-        throw new Error('Transaction failed');
+        // Wait for transaction receipt
+        const receipt = await client.asEvmClient()!.waitForTransactionReceipt({
+          hash: txHash as `0x${string}`,
+        });
+
+        if (receipt.status === 'success') {
+          setSaveSuccess(true);
+          // Hide success message after 3 seconds
+          setTimeout(() => setSaveSuccess(false), 3000);
+        } else {
+          throw new Error('Transaction failed');
+        }
       }
     } catch (error) {
       console.error('Error saving fee configuration:', error);

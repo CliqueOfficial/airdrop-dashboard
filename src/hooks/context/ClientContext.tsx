@@ -4,13 +4,13 @@ import { createContext, JSX } from 'solid-js';
 import { createEvmPublicClient } from '../../util';
 import { Deployment } from '../../types';
 
-interface GeneralClient {
+export interface GeneralClient {
   chainId: string;
   asEvmClient: () => ReturnType<typeof createEvmPublicClient>;
   asSolanaClient: () => ReturnType<typeof createSolanaRpc>;
 }
 
-interface ClientContextProps {
+export interface ClientContextProps {
   getClient: (options: { chainId: string; rpcUrl?: string }) => GeneralClient | undefined;
 }
 

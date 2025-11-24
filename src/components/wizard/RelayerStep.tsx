@@ -22,7 +22,7 @@ const listRelayer = async (appId: string, baseUrl: string, apiKey: string) => {
 
 const generateRelayer = async (
   appId: string,
-  chainId: number,
+  chainId: string,
   online: boolean,
   baseUrl: string,
   apiKey: string
@@ -90,14 +90,15 @@ export default function RelayerStep(props: RelayerStepProps) {
     setCreateSuccess(false);
 
     try {
-      const chainIdNum = parseInt(chainId());
-      if (isNaN(chainIdNum)) {
-        throw new Error('Chain ID must be a number');
+      const chainIdValidated =
+        chainId() === 'sol:mainnet' || chainId() === 'sol:devnet' || !isNaN(parseInt(chainId()));
+      if (!chainIdValidated) {
+        setCreateError('Invalid chain ID, should be sol:mainnet, sol:devnet or a number');
+        return;
       }
-
       await generateRelayer(
         props.appConf.appId,
-        chainIdNum,
+        chainId(),
         online(),
         config().baseUrl,
         config().apiKey
@@ -179,7 +180,7 @@ export default function RelayerStep(props: RelayerStepProps) {
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Chain ID *</label>
           <input
-            type="number"
+            type="text"
             value={chainId()}
             onInput={(e) => setChainId(e.currentTarget.value)}
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

@@ -9,9 +9,7 @@ import {
   useContext,
 } from 'solid-js';
 import { Relayer } from '../../types';
-import { DeploymentContext } from '../../hooks/context/Deployment';
 import { formatEther } from 'viem';
-import { useAppConf } from '../../hooks/useAppConf';
 import { AppConfContext } from '../../hooks/context/AppConf';
 import { ClientContext } from '../../hooks/context/ClientContext';
 

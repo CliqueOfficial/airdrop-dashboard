@@ -20,6 +20,22 @@ import DistributorAbi from '../../abi/Distributor';
 import TabView from '../TabView';
 import { AppConfContext } from '../../hooks/context/AppConf';
 import { ClientContext } from '../../hooks/context/ClientContext';
+import {
+  fetchAllClaimRoot,
+  fetchClaimRoot,
+  fetchMaybeClaimRoot,
+  MERKLE_DISTRIBUTOR_PROGRAM_ADDRESS,
+} from '../../generated/merkle_distributor';
+import {
+  address,
+  getAddressEncoder,
+  getArrayEncoder,
+  getBytesEncoder,
+  getProgramDerivedAddress,
+  getU8Encoder,
+  signature,
+} from '@solana/kit';
+import { expectAddress, expectSome } from '../../generated/merkle_distributor/shared';
 
 const setClaimRoot = async (
   baseUrl: string,
@@ -57,13 +73,12 @@ export default function ApplyStrategyStep() {
   const deployments = () => appConf.deployments;
   const availableRoots = () => appConf.extra.root;
 
-  const tabs = () => {
-    return Object.keys(deployments()).map((name) => ({
-      id: name,
-      label: name,
-      data: null,
+  const tabs = () =>
+    Object.entries(deployments()).map(([deployment, deploymentData]) => ({
+      id: deployment,
+      label: deployment,
+      data: deploymentData,
     }));
-  };
 
   return (
     <TabView tabs={tabs()}>
@@ -72,7 +87,7 @@ export default function ApplyStrategyStep() {
           <DeploymentConfigurationPanel
             appId={appConf.appId}
             name={tab.id}
-            deployment={deployments()[tab.id]}
+            deployment={tab.data}
             roots={availableRoots}
           />
         </div>
@@ -92,15 +107,17 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
   const { config } = useConfig();
   const contractAddress = createMemo(() => props.deployment.roles.contract);
   const clientCtx = useContext(ClientContext);
-  const client = createMemo(() => {
-    return clientCtx.getClient({
-      chainId: props.deployment.chainId.toString(),
-      rpcUrl: props.deployment.rpcUrl,
-    });
+  const client = clientCtx.getClient({
+    chainId: props.deployment.chainId.toString(),
+    rpcUrl: props.deployment.rpcUrl,
   });
-  const availableConfigurationId = createMemo(() =>
-    Object.keys(props.deployment.extra.configurations || {})
-  );
+  const availableConfigurationId = createMemo(() => {
+    if (props.deployment.chainId.startsWith('sol:')) {
+      return ['default'];
+    } else {
+      return Object.keys(props.deployment.extra.configurations || {});
+    }
+  });
 
   const [selectedRoot, setSelectedRoot] = createSignal<string>('');
   const [selectedConfiguration, setSelectedConfiguration] = createSignal<string>('');
@@ -110,29 +127,57 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
 
   const [configuredRoots, { refetch }] = createResource(
     () => ({
-      client: client()?.asEvmClient(),
       contractAddress: contractAddress(),
       roots: props.roots(),
       availableConfigurationId: availableConfigurationId(),
     }),
-    async ({ client, contractAddress, roots, availableConfigurationId }) => {
+    async ({ contractAddress, roots, availableConfigurationId }) => {
       const configurationIdPromises = Object.entries(roots).map(async ([name, root]) => {
-        if (!client || !contractAddress) return {};
-        const configurationId = await client.readContract({
-          address: contractAddress as `0x${string}`,
-          abi: DistributorAbi,
-          functionName: 'configurationId',
-          args: [root as `0x${string}`],
-        });
+        if (!client || !contractAddress) return undefined;
 
-        const id = availableConfigurationId.find(
-          (id) => keccak256(toBytes(id)) === configurationId
-        );
+        if (props.deployment.chainId.startsWith('sol:')) {
+          const [claimRootPda, _] = await getProgramDerivedAddress({
+            programAddress: MERKLE_DISTRIBUTOR_PROGRAM_ADDRESS,
+            seeds: [
+              getBytesEncoder().encode(new Uint8Array([67, 108, 97, 105, 109, 82, 111, 111, 116])),
+              getAddressEncoder().encode(
+                expectAddress(address(props.deployment.roles['contract']))
+              ),
+              getBytesEncoder().encode(toBytes(root)),
+            ],
+          });
+          const claimRoot = await fetchMaybeClaimRoot(
+            client.asSolanaClient()!,
+            address(claimRootPda)
+          );
+          if (claimRoot.exists) {
+            return {
+              name,
+              id: 'default',
+            };
+          } else {
+            return {
+              name,
+              id: undefined,
+            };
+          }
+        } else {
+          const configurationId = await client.asEvmClient()!.readContract({
+            address: contractAddress as `0x${string}`,
+            abi: DistributorAbi,
+            functionName: 'configurationId',
+            args: [root as `0x${string}`],
+          });
 
-        return {
-          name,
-          id,
-        };
+          const id = availableConfigurationId.find(
+            (id) => keccak256(toBytes(id)) === configurationId
+          );
+
+          return {
+            name,
+            id,
+          };
+        }
       });
       return Promise.all(configurationIdPromises);
     }
@@ -150,25 +195,32 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
       configuration
     );
 
-    // Wait for transaction receipt
-    const currentClient = client()?.asEvmClient();
-    if (!currentClient) {
-      throw new Error('Client not initialized');
-    }
-
-    const receipt = await currentClient.waitForTransactionReceipt({
-      hash: txHash as `0x${string}`,
-      timeout: 60_000, // 60 seconds timeout
+    const client = clientCtx.getClient({
+      chainId: props.deployment.chainId.toString(),
+      rpcUrl: props.deployment.rpcUrl,
     });
 
-    if (receipt.status !== 'success') {
-      throw new Error('Transaction failed');
+    if (props.deployment.chainId.startsWith('sol:')) {
+      const receipt = await client?.asSolanaClient()!.getTransaction(signature(txHash)).send();
+      if (receipt && receipt.meta?.err) {
+        throw new Error('Transaction failed on chain');
+      }
+
+      // Refetch the configured roots after successful transaction
+      refetch();
+    } else {
+      const receipt = await client?.asEvmClient()!.waitForTransactionReceipt({
+        hash: txHash as `0x${string}`,
+        timeout: 60_000, // 60 seconds timeout
+      });
+
+      if (receipt.status !== 'success') {
+        throw new Error('Transaction failed');
+      }
+
+      // Refetch the configured roots after successful transaction
+      refetch();
     }
-
-    // Refetch the configured roots after successful transaction
-    refetch();
-
-    return receipt;
   };
 
   const handleRemoveRoot = async (rootName: string) => {
@@ -193,7 +245,7 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
         }
       >
         <Show
-          when={configuredRoots() && configuredRoots()!.filter((r) => r.id).length > 0}
+          when={configuredRoots() && configuredRoots()!.filter((r) => r?.id).length > 0}
           fallback={
             <div class="text-center py-12 px-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
               <FiSettings class="w-12 h-12 mx-auto text-gray-400 mb-3" />
@@ -205,7 +257,7 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
           <div class="grid gap-4">
             <For each={configuredRoots()}>
               {(root) => (
-                <Show when={root.id}>
+                <Show when={root?.id}>
                   <div class="group relative bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
                     {/* Status indicator */}
                     <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500" />
@@ -217,7 +269,7 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
                           <div class="flex items-center gap-2 mb-2">
                             <BsCheck2Circle class="w-5 h-5 text-green-500 flex-shrink-0" />
                             <h4 class="text-base font-semibold text-gray-900 truncate">
-                              {root.name}
+                              {root?.name}
                             </h4>
                           </div>
 
@@ -227,7 +279,7 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
                                 Configuration ID:
                               </span>
                               <code class="text-xs font-mono text-gray-700 bg-gray-100 px-2 py-1 rounded">
-                                {root.id}
+                                {root?.id}
                               </code>
                             </div>
                           </div>
@@ -247,9 +299,9 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
                               opacity-60 group-hover:opacity-100
                               disabled:opacity-40 disabled:cursor-not-allowed
                             "
-                            disabled={removingRoot() === root.name || isApplying()}
+                            disabled={removingRoot() === root?.name || isApplying()}
                             onClick={async () => {
-                              const rootName = root.name;
+                              const rootName = root?.name;
                               if (!rootName) return;
 
                               if (
@@ -275,12 +327,12 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
                             }}
                           >
                             <Show
-                              when={removingRoot() === root.name}
+                              when={removingRoot() === root?.name}
                               fallback={<BsTrash class="w-4 h-4" />}
                             >
                               <div class="w-4 h-4 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />
                             </Show>
-                            <span>{removingRoot() === root.name ? 'Removing...' : 'Remove'}</span>
+                            <span>{removingRoot() === root?.name ? 'Removing...' : 'Remove'}</span>
                           </button>
                         </div>
                       </div>

@@ -24,6 +24,7 @@
     "@solana-program/compute-budget": "^0.11.0",
     "@solana-program/token": "^0.8.0",
     "@solana/kit": "^5.0.0",
+    "@solid-primitives/resource": "^0.4.3",
     "@solid-primitives/storage": "^4.3.3",
     "@solidjs/router": "^0.15.1",
     "@wagmi/connectors": "^6.0.1",

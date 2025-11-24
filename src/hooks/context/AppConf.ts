@@ -1,6 +1,11 @@
 import { Accessor, createContext } from 'solid-js';
 import { AppConf, Deployment } from '../../types';
 import { SetStoreFunction } from 'solid-js/store';
+import { ClientContextProps, GeneralClient } from './ClientContext';
+import DistributorAbi from '../../abi/Distributor';
+import { parseAbi } from 'viem';
+import { address } from '@solana/kit';
+import { findAssociatedTokenPda, TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 
 export interface AppConfContextProps {
   appConf: AppConf;

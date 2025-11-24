@@ -23,12 +23,14 @@ export default function StrategyStep() {
 
   const availableRoots = () => appConf.extra.root;
 
-  const tabs = createMemo(() => {
-    return Object.keys(deployments).map((name) => ({
-      id: name,
-      label: name,
-    }));
-  });
+  const tabs = () =>
+    Object.entries(deployments)
+      .filter(([_, deploymentData]) => !deploymentData.chainId.startsWith('sol:'))
+      .map(([deployment, deploymentData]) => ({
+        id: deployment,
+        label: deployment,
+        data: deploymentData,
+      }));
   return (
     <TabView tabs={tabs()}>
       {(tab) => (

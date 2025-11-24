@@ -64,17 +64,17 @@ const HOOK_TYPES: HookType[] = [
   },
 ];
 
-interface HooksStepProps {}
-
-export default function HooksStep(props: HooksStepProps) {
+export default function HooksStep() {
   const { appConf } = useContext(AppConfContext)!;
 
   const tabs = () =>
-    Object.keys(appConf.deployments).map((deployment) => ({
-      id: deployment,
-      label: deployment,
-      data: null,
-    }));
+    Object.entries(appConf.deployments)
+      .filter(([_, deploymentData]) => !deploymentData.chainId.startsWith('sol:'))
+      .map(([deployment, deploymentData]) => ({
+        id: deployment,
+        label: deployment,
+        data: deploymentData,
+      }));
 
   return (
     <TabView tabs={tabs()}>

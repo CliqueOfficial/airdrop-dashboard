@@ -14,12 +14,28 @@ import { useConfig } from '../../hooks/useConfig';
 import { useParams } from '@solidjs/router';
 import { ClientContext } from '../../hooks/context/ClientContext';
 import {
+  fetchMaybeToken,
   findAssociatedTokenPda,
   getTokenCodec,
   TOKEN_PROGRAM_ADDRESS,
 } from '@solana-program/token';
-import { address, Address, assertAccountExists, fetchEncodedAccount } from '@solana/kit';
-import { getMerkleDistributorCodec } from '../../generated/merkle_distributor';
+import {
+  address,
+  Address,
+  assertAccountExists,
+  fetchEncodedAccount,
+  getAddressEncoder,
+  getProgramDerivedAddress,
+  getBytesEncoder,
+  isSome,
+  unwrapOption,
+} from '@solana/kit';
+import {
+  fetchMerkleDistributor,
+  getMerkleDistributorCodec,
+  MERKLE_DISTRIBUTOR_PROGRAM_ADDRESS,
+} from '../../generated/merkle_distributor';
+import { expectAddress } from '../../generated/merkle_distributor/shared';
 
 interface DeploymentProps {
   name: string;
@@ -100,7 +116,11 @@ export default function Deployment(props: DeploymentProps) {
     () => client(),
     async (client) => {
       if (client.chainId.startsWith('sol:')) {
-        return props.deployment.roles['mint'];
+        const distributorAccount = await fetchMerkleDistributor(
+          client.asSolanaClient()!,
+          address(contractAddress)
+        );
+        return distributorAccount.data.mint;
       } else {
         const tokenAddr = await client.asEvmClient()!.readContract({
           address: contractAddress as `0x${string}`,
@@ -138,7 +158,11 @@ export default function Deployment(props: DeploymentProps) {
     () => client(),
     async (client) => {
       if (client.chainId.startsWith('sol:')) {
-        return props.deployment.roles['vault'];
+        const distributorAccount = await fetchMerkleDistributor(
+          client.asSolanaClient()!,
+          address(contractAddress)
+        );
+        return distributorAccount.data.vault;
       } else {
         const vault = await client.asEvmClient()!.readContract({
           address: contractAddress as `0x${string}`,
@@ -203,17 +227,22 @@ export default function Deployment(props: DeploymentProps) {
     async ({ client, tokenAddr, vault }) => {
       if (client.chainId.startsWith('sol:')) {
         const vaultAta = await findAssociatedTokenPda({
-          mint: address(props.deployment.roles['mint']!),
+          mint: address(tokenAddr),
           owner: address(vault),
           tokenProgram: TOKEN_PROGRAM_ADDRESS,
         });
-        const tokenAccount = await fetchEncodedAccount(client.asSolanaClient()!, vaultAta[0]);
+        const tokenAccount = await fetchMaybeToken(client.asSolanaClient()!, vaultAta[0]);
         if (!tokenAccount.exists) {
           return 0n;
         }
-        const codec = getTokenCodec();
-        const tokenAccountData = codec.decode(tokenAccount.data);
-        return tokenAccountData.delegatedAmount;
+        assertAccountExists(tokenAccount);
+        if (
+          isSome(tokenAccount.data.delegate) &&
+          unwrapOption(tokenAccount.data.delegate) === address(contractAddress)
+        ) {
+          return tokenAccount.data.amount;
+        }
+        return 0n;
       } else {
         const allowance = await client.asEvmClient()!.readContract({
           address: tokenAddr as `0x${string}`,
@@ -240,7 +269,7 @@ export default function Deployment(props: DeploymentProps) {
     async ({ client, tokenAddr, vault }) => {
       if (client.chainId.startsWith('sol:')) {
         const vaultAta = await findAssociatedTokenPda({
-          mint: address(props.deployment.roles['mint']!),
+          mint: address(tokenAddr),
           owner: address(vault),
           tokenProgram: TOKEN_PROGRAM_ADDRESS,
         });
