@@ -240,7 +240,7 @@ export default function Deployment(props: DeploymentProps) {
           isSome(tokenAccount.data.delegate) &&
           unwrapOption(tokenAccount.data.delegate) === address(contractAddress)
         ) {
-          return tokenAccount.data.amount;
+          return tokenAccount.data.delegatedAmount;
         }
         return 0n;
       } else {
@@ -273,9 +273,12 @@ export default function Deployment(props: DeploymentProps) {
           owner: address(vault),
           tokenProgram: TOKEN_PROGRAM_ADDRESS,
         });
-
-        const balance = await client.asSolanaClient()!.getTokenAccountBalance(vaultAta[0]).send();
-        return BigInt(balance.value.amount);
+        const tokenAccount = await fetchMaybeToken(client.asSolanaClient()!, vaultAta[0]);
+        if (!tokenAccount.exists) {
+          return 0n;
+        }
+        assertAccountExists(tokenAccount);
+        return tokenAccount.data.amount;
       } else {
         const balance = await client.asEvmClient()!.readContract({
           address: tokenAddr as `0x${string}`,
