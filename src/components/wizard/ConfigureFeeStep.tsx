@@ -44,9 +44,9 @@ interface SetFeeRequest {
       }
     | {
         singleTierFeeRate: {
-          feeRate: string;
-          maxFee: string;
-          minFee: string;
+          fee_rate: string;
+          max_fee: string;
+          min_fee: string;
         };
       }
     | 'default';
@@ -372,9 +372,9 @@ function FeeConfigurationPanel(props: FeeConfigurationPanelProps) {
       } else if (feeMode() === 'SingleTierFeeRate') {
         feeModeRequest = {
           singleTierFeeRate: {
-            feeRate: feeRate(),
-            maxFee: maxFee(),
-            minFee: minFee(),
+            fee_rate: feeRate(),
+            max_fee: maxFee(),
+            min_fee: minFee(),
           },
         };
       } else {
