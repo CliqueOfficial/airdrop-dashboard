@@ -36,6 +36,7 @@ import {
   signature,
 } from '@solana/kit';
 import { expectAddress, expectSome } from '../../generated/merkle_distributor/shared';
+import { waitForSolanaReceipt } from '../../util';
 
 const setClaimRoot = async (
   baseUrl: string,
@@ -201,8 +202,8 @@ function DeploymentConfigurationPanel(props: DeploymentConfigurationPanelProps) 
     });
 
     if (props.deployment.chainId.startsWith('sol:')) {
-      const receipt = await client?.asSolanaClient()!.getTransaction(signature(txHash)).send();
-      if (receipt && receipt.meta?.err) {
+      const receipt = await waitForSolanaReceipt(client?.asSolanaClient()!, txHash);
+      if (receipt.meta?.err) {
         throw new Error('Transaction failed on chain');
       }
 

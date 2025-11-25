@@ -31,6 +31,7 @@ import {
   MERKLE_DISTRIBUTOR_PROGRAM_ADDRESS,
 } from '../../generated/merkle_distributor';
 import { expectAddress, expectSome } from '../../generated/merkle_distributor/shared';
+import { waitForSolanaReceipt } from '../../util';
 
 interface SetFeeRequest {
   appId: string;
@@ -398,8 +399,8 @@ function FeeConfigurationPanel(props: FeeConfigurationPanelProps) {
       })!;
 
       if (props.deployment.chainId.startsWith('sol:')) {
-        const receipt = await client.asSolanaClient()!.getTransaction(signature(txHash)).send();
-        if (!receipt || receipt.meta?.err) {
+        const receipt = await waitForSolanaReceipt(client.asSolanaClient()!, txHash);
+        if (receipt.meta?.err) {
           throw new Error('Transaction failed on chain');
         } else {
           setSaveSuccess(true);

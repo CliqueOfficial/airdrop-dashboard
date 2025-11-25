@@ -19,6 +19,7 @@ import {
 } from '@solana/kit';
 import { MERKLE_DISTRIBUTOR_PROGRAM_ADDRESS } from '../../generated/merkle_distributor';
 import { expectAddress } from '../../generated/merkle_distributor/shared';
+import { waitForSolanaReceipt } from '../../util';
 
 interface DeploymentParams {
   deployer: string;
@@ -346,11 +347,8 @@ export default function DeploymentStep() {
                 rpcUrl: deployment.rpcUrl,
               })!;
               if (chainId.startsWith('sol:')) {
-                const receipt = await client
-                  .asSolanaClient()!
-                  .getTransaction(signature(txHash))
-                  .send();
-                if (!receipt || receipt.meta?.err) {
+                const receipt = await waitForSolanaReceipt(client.asSolanaClient()!, txHash);
+                if (receipt.meta?.err) {
                   throw new Error('Transaction failed on chain');
                 }
                 const [pda, bump] = await getProgramDerivedAddress({
