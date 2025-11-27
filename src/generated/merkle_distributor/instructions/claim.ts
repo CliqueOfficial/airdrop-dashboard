@@ -63,9 +63,7 @@ export type ClaimInstruction<
   TAccountFeeConfig extends string | IAccountMeta<string> = string,
   TAccountBase extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends string | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountTokenProgram extends
-    | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountTokenProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -174,7 +172,7 @@ export type ClaimAsyncInput<
   feeConfig: Address<TAccountFeeConfig>;
   base: Address<TAccountBase>;
   systemProgram?: Address<TAccountSystemProgram>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  tokenProgram: Address<TAccountTokenProgram>;
   handler: ClaimInstructionDataArgs['handler'];
   proof: ClaimInstructionDataArgs['proof'];
   amount: ClaimInstructionDataArgs['amount'];
@@ -280,10 +278,6 @@ export async function getClaimInstructionAsync<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
@@ -343,7 +337,7 @@ export type ClaimInput<
   feeConfig: Address<TAccountFeeConfig>;
   base: Address<TAccountBase>;
   systemProgram?: Address<TAccountSystemProgram>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  tokenProgram: Address<TAccountTokenProgram>;
   handler: ClaimInstructionDataArgs['handler'];
   proof: ClaimInstructionDataArgs['proof'];
   amount: ClaimInstructionDataArgs['amount'];
@@ -420,10 +414,6 @@ export function getClaimInstruction<
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');

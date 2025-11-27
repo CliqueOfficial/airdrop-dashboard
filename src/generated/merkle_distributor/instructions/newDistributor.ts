@@ -56,9 +56,7 @@ export type NewDistributorInstruction<
   TAccountVault extends string | IAccountMeta<string> = string,
   TAccountPayer extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends string | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountTokenProgram extends
-    | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountTokenProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -147,7 +145,7 @@ export type NewDistributorAsyncInput<
   /** The [System] program. */
   systemProgram?: Address<TAccountSystemProgram>;
   /** The [Token] program. */
-  tokenProgram?: Address<TAccountTokenProgram>;
+  tokenProgram: Address<TAccountTokenProgram>;
   signer: NewDistributorInstructionDataArgs['signer'];
   dynamicRecipient: NewDistributorInstructionDataArgs['dynamicRecipient'];
 };
@@ -220,10 +218,6 @@ export async function getNewDistributorInstructionAsync<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
@@ -276,7 +270,7 @@ export type NewDistributorInput<
   /** The [System] program. */
   systemProgram?: Address<TAccountSystemProgram>;
   /** The [Token] program. */
-  tokenProgram?: Address<TAccountTokenProgram>;
+  tokenProgram: Address<TAccountTokenProgram>;
   signer: NewDistributorInstructionDataArgs['signer'];
   dynamicRecipient: NewDistributorInstructionDataArgs['dynamicRecipient'];
 };
@@ -333,10 +327,6 @@ export function getNewDistributorInstruction<
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');

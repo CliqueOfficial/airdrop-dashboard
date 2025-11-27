@@ -16,17 +16,18 @@ import { ClientContext } from '../../hooks/context/ClientContext';
 import {
   fetchMaybeToken,
   findAssociatedTokenPda,
-  getTokenCodec,
   TOKEN_PROGRAM_ADDRESS,
+  fetchMaybeMint,
 } from '@solana-program/token';
 import {
+  fetchMaybeMint as fetchMaybeMint2022,
+  fetchMaybeToken as fetchMaybeToken2022,
+  TOKEN_2022_PROGRAM_ADDRESS,
+} from '@solana-program/token-2022';
+import {
   address,
-  Address,
   assertAccountExists,
   fetchEncodedAccount,
-  getAddressEncoder,
-  getProgramDerivedAddress,
-  getBytesEncoder,
   isSome,
   unwrapOption,
 } from '@solana/kit';
@@ -35,7 +36,6 @@ import {
   getMerkleDistributorCodec,
   MERKLE_DISTRIBUTOR_PROGRAM_ADDRESS,
 } from '../../generated/merkle_distributor';
-import { expectAddress } from '../../generated/merkle_distributor/shared';
 
 interface DeploymentProps {
   name: string;
@@ -132,6 +132,27 @@ export default function Deployment(props: DeploymentProps) {
     }
   );
 
+  const [tokenProgram] = createResource(
+    () => {
+      if (!client() || !tokenAddr()) return undefined;
+      return {
+        client: client()!,
+        tokenAddr: tokenAddr()!,
+      };
+    },
+    async ({ client, tokenAddr }) => {
+      if (client.chainId.startsWith('sol:')) {
+        const a = await fetchMaybeMint(client.asSolanaClient()!, address(tokenAddr));
+        if (a.exists) {
+          return a.programAddress;
+        }
+        return undefined;
+      } else {
+        return undefined;
+      }
+    }
+  );
+
   const [tokenDecimals] = createResource(
     () => {
       if (!client() || !tokenAddr()) return undefined;
@@ -218,31 +239,51 @@ export default function Deployment(props: DeploymentProps) {
   const [allowance, { refetch: refetchAllowance }] = createResource(
     () => {
       if (!client() || !tokenAddr() || !vault()) return undefined;
+      if (props.deployment.chainId.startsWith('sol:') && !tokenProgram()) {
+        return undefined;
+      }
       return {
         client: client()!,
         tokenAddr: tokenAddr() as `0x${string}`,
         vault: vault() as `0x${string}`,
+        tokenProgram: tokenProgram(),
       };
     },
-    async ({ client, tokenAddr, vault }) => {
+    async ({ client, tokenAddr, vault, tokenProgram }) => {
       if (client.chainId.startsWith('sol:')) {
         const vaultAta = await findAssociatedTokenPda({
           mint: address(tokenAddr),
           owner: address(vault),
-          tokenProgram: TOKEN_PROGRAM_ADDRESS,
+          tokenProgram: tokenProgram!,
         });
-        const tokenAccount = await fetchMaybeToken(client.asSolanaClient()!, vaultAta[0]);
-        if (!tokenAccount.exists) {
+
+        if (tokenProgram === TOKEN_PROGRAM_ADDRESS) {
+          const tokenAccount = await fetchMaybeToken(client.asSolanaClient()!, vaultAta[0]);
+          if (!tokenAccount.exists) {
+            return 0n;
+          }
+          assertAccountExists(tokenAccount);
+          if (
+            isSome(tokenAccount.data.delegate) &&
+            unwrapOption(tokenAccount.data.delegate) === address(contractAddress)
+          ) {
+            return tokenAccount.data.delegatedAmount;
+          }
+          return 0n;
+        } else if (tokenProgram === TOKEN_2022_PROGRAM_ADDRESS) {
+          const tokenAccount = await fetchMaybeToken2022(client.asSolanaClient()!, vaultAta[0]);
+          if (!tokenAccount.exists) {
+            return 0n;
+          }
+          assertAccountExists(tokenAccount);
+          if (
+            isSome(tokenAccount.data.delegate) &&
+            unwrapOption(tokenAccount.data.delegate) === address(contractAddress)
+          ) {
+            return tokenAccount.data.delegatedAmount;
+          }
           return 0n;
         }
-        assertAccountExists(tokenAccount);
-        if (
-          isSome(tokenAccount.data.delegate) &&
-          unwrapOption(tokenAccount.data.delegate) === address(contractAddress)
-        ) {
-          return tokenAccount.data.delegatedAmount;
-        }
-        return 0n;
       } else {
         const allowance = await client.asEvmClient()!.readContract({
           address: tokenAddr as `0x${string}`,
@@ -260,25 +301,40 @@ export default function Deployment(props: DeploymentProps) {
   const [balance, { refetch: refetchBalance }] = createResource(
     () => {
       if (!client() || !tokenAddr() || !vault()) return undefined;
+      if (props.deployment.chainId.startsWith('sol:') && !tokenProgram()) {
+        return undefined;
+      }
       return {
         client: client()!,
         tokenAddr: tokenAddr()!,
         vault: vault()!,
+        tokenProgram: tokenProgram(),
       };
     },
-    async ({ client, tokenAddr, vault }) => {
+    async ({ client, tokenAddr, vault, tokenProgram }) => {
       if (client.chainId.startsWith('sol:')) {
         const vaultAta = await findAssociatedTokenPda({
           mint: address(tokenAddr),
           owner: address(vault),
-          tokenProgram: TOKEN_PROGRAM_ADDRESS,
+          tokenProgram: tokenProgram!,
         });
-        const tokenAccount = await fetchMaybeToken(client.asSolanaClient()!, vaultAta[0]);
-        if (!tokenAccount.exists) {
-          return 0n;
+
+        if (tokenProgram === TOKEN_PROGRAM_ADDRESS) {
+          const tokenAccount = await fetchMaybeToken(client.asSolanaClient()!, vaultAta[0]);
+          if (!tokenAccount.exists) {
+            return 0n;
+          }
+          assertAccountExists(tokenAccount);
+          return tokenAccount.data.amount;
+        } else if (tokenProgram === TOKEN_2022_PROGRAM_ADDRESS) {
+          const tokenAccount = await fetchMaybeToken2022(client.asSolanaClient()!, vaultAta[0]);
+          if (!tokenAccount.exists) {
+            return 0n;
+          }
+          assertAccountExists(tokenAccount);
+          return tokenAccount.data.amount;
         }
-        assertAccountExists(tokenAccount);
-        return tokenAccount.data.amount;
+        return 0n;
       } else {
         const balance = await client.asEvmClient()!.readContract({
           address: tokenAddr as `0x${string}`,
