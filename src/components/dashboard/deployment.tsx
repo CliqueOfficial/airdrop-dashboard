@@ -163,7 +163,11 @@ export default function Deployment(props: DeploymentProps) {
     },
     async ({ client, tokenAddr }) => {
       if (client.chainId.startsWith('sol:')) {
-        return 9;
+        const mintAcount = await fetchMaybeMint(client.asSolanaClient()!, address(tokenAddr));
+        if (!mintAcount.exists) {
+          return undefined;
+        }
+        return mintAcount.data.decimals;
       } else {
         const decimals = await client.asEvmClient()!.readContract({
           address: tokenAddr as `0x${string}`,
