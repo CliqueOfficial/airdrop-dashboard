@@ -9,9 +9,10 @@ import {
   useContext,
 } from 'solid-js';
 import { Relayer } from '../../types';
-import { formatEther } from 'viem';
+import { formatEther, parseAbi } from 'viem';
 import { AppConfContext } from '../../hooks/context/AppConf';
 import { ClientContext } from '../../hooks/context/ClientContext';
+import { address } from '@solana/kit';
 
 interface RelayersProps {
   appId: string;
@@ -174,32 +175,33 @@ function RelayerCard(props: {
   const { appConf, deployments } = useContext(AppConfContext)!;
   const clientCtx = useContext(ClientContext);
 
-  const client = createMemo(() => {
-    if (!deployments?.()) return undefined;
-    const deployment = Object.values(deployments?.() || {}).find(
-      (deployment) => deployment.chainId === props.relayer.chainId
-    );
-    return clientCtx
-      .getClient({
-        chainId: deployment!.chainId.toString(),
-        rpcUrl: deployment!.rpcUrl,
-      })
-      ?.asEvmClient();
-  });
-
   const [balance] = createResource(
     () => {
-      if (!client()) return undefined;
       return {
         address: props.relayer.address as `0x${string}`,
-        client: client()!,
       };
     },
-    async ({ address, client }) => {
-      const balance = await client.getBalance({
-        address: address as `0x${string}`,
+    async ({ address: addr }) => {
+      const deployment = Object.values(deployments?.() || {}).find(
+        (deployment) => deployment.chainId === props.relayer.chainId
+      );
+      if (!deployment) return 0n;
+
+      const client = clientCtx.getClient({
+        chainId: deployment!.chainId.toString(),
+        rpcUrl: deployment!.rpcUrl,
       });
-      return balance;
+      if (!client) return 0n;
+
+      if (client.chainId.startsWith('sol:')) {
+        const balance = await client.asSolanaClient()!.getBalance(address(addr)).send();
+        return balance.value;
+      } else {
+        const balance = await client.asEvmClient()!.getBalance({
+          address: addr as `0x${string}`,
+        });
+        return balance;
+      }
     }
   );
   return (
