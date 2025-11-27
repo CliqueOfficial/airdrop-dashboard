@@ -36,10 +36,8 @@ import {
   findAssociatedTokenPda,
   getApproveCheckedInstruction,
   getCreateAssociatedTokenIdempotentInstruction,
-  getCreateAssociatedTokenIdempotentInstructionAsync,
-  getCreateAssociatedTokenIdempotentInstructionDataCodec,
-  TOKEN_PROGRAM_ADDRESS,
-} from '@solana-program/token';
+  TOKEN_2022_PROGRAM_ADDRESS,
+} from '@solana-program/token-2022';
 import {
   estimateComputeUnitLimitFactory,
   getSetComputeUnitLimitInstruction,
@@ -166,7 +164,7 @@ function SolanaApprovePanel() {
     const vaultAta = await findAssociatedTokenPda({
       mint: address(mint()),
       owner: vault.address,
-      tokenProgram: TOKEN_PROGRAM_ADDRESS,
+      tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     });
     const { value: latestBlockhash } = await client.getLatestBlockhash().send();
     const estimateComputeUnitLimit = estimateComputeUnitLimitFactory({
