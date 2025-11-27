@@ -33,6 +33,7 @@ import {
   getBase64EncodedWireTransaction,
 } from '@solana/kit';
 import {
+  fetchMaybeMint,
   findAssociatedTokenPda,
   getApproveCheckedInstruction,
   getCreateAssociatedTokenIdempotentInstruction,
@@ -117,9 +118,9 @@ function SolanaApprovePanel() {
   const { hasProvider, isConnected, connect, disconnect, publicKey } =
     useContext(phantomSdkContext);
   const [rpc, setRpc] = createSignal<string>('https://api.devnet.solana.com');
-  const [mint, setMint] = createSignal<string>('5pTJy3LPzTH2ptdJtrabo85QrvYYicyp3T81RVMtHxfE');
+  const [mint, setMint] = createSignal<string>('a7FBpnsWYvxZPQuFJDipDXEQL5gQYAvtU2nAWH1cHaq');
   const [distributor, setDistributor] = createSignal<string>(
-    '5wHzB7JrNoccon2TWzJS9JdmEutNVWy6r8AcGHmfDKAu'
+    '8Nkh7C7VdKtDfRFBKRJkqbFA7xNA9cGn4Sbox2Zde219'
   );
   const [allowance, setAllowance] = createSignal<string>('1000000000');
   const [sig, setSig] = createSignal<string>('');
@@ -166,6 +167,15 @@ function SolanaApprovePanel() {
       owner: vault.address,
       tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     });
+
+    const mintAcount = await fetchMaybeMint(
+      client!,
+      address(mint())
+    );
+    if (!mintAcount.exists) {
+      return;
+    }
+    const decimals = mintAcount.data.decimals;
     const { value: latestBlockhash } = await client.getLatestBlockhash().send();
     const estimateComputeUnitLimit = estimateComputeUnitLimitFactory({
       rpc: client,
@@ -189,12 +199,13 @@ function SolanaApprovePanel() {
               mint: address(mint()),
               owner: vault,
               amount: BigInt(allowance()),
-              decimals: 9,
+              decimals: decimals,
             }),
           ],
           tx
         )
     );
+
     const computeUnitEstimate = await estimateComputeUnitLimit(txMsg);
 
     const txWithComputeUnitLimit = appendTransactionMessageInstruction(
