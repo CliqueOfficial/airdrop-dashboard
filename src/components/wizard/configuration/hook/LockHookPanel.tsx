@@ -14,6 +14,7 @@ import { DeploymentContext } from '../../../../hooks/context/Deployment';
 import { useStreamPreset, type StreamPreset } from '../../../../hooks/useStreamPreset';
 import { keccak256, toBytes, isAddress, parseUnits, formatUnits } from 'viem';
 import HookPanelHeader from './HookPanelHeader';
+import DatetimePicker from '../../../DatetimePicker';
 import Spin from '../../../Spin';
 
 interface LockHookPanelProps {
@@ -46,7 +47,7 @@ export default function LockHookPanel(props: LockHookPanelProps) {
   const [isDeploying, setIsDeploying] = createSignal(false);
 
   // Temporary editing state
-  const [tempStartTime, setTempStartTime] = createSignal(0);
+  const [tempStartTime, setTempStartTime] = createSignal(0n);
   const [tempCliffDuration, setTempCliffDuration] = createSignal(0);
   const [tempVestingDuration, setTempVestingDuration] = createSignal(0);
   const [tempPieceDuration, setTempPieceDuration] = createSignal(0);
@@ -58,7 +59,7 @@ export default function LockHookPanel(props: LockHookPanelProps) {
   createEffect(() => {
     const preset = streamPreset();
     if (preset && !isEditing()) {
-      setTempStartTime(Number(preset.startTime));
+      setTempStartTime(preset.startTime);
       setTempCliffDuration(Number(preset.cliffDuration));
       setTempVestingDuration(Number(preset.vestingDuration));
       setTempPieceDuration(Number(preset.pieceDuration));
@@ -91,7 +92,7 @@ export default function LockHookPanel(props: LockHookPanelProps) {
     }
 
     const newPreset: StreamPreset = {
-      startTime: BigInt(tempStartTime()),
+      startTime: tempStartTime(),
       cliffDuration: BigInt(tempCliffDuration()),
       vestingDuration: BigInt(tempVestingDuration()),
       pieceDuration: BigInt(tempPieceDuration()),
@@ -117,7 +118,7 @@ export default function LockHookPanel(props: LockHookPanelProps) {
   const handleCancel = () => {
     const preset = streamPreset();
     if (preset) {
-      setTempStartTime(Number(preset.startTime));
+      setTempStartTime(preset.startTime);
       setTempCliffDuration(Number(preset.cliffDuration));
       setTempVestingDuration(Number(preset.vestingDuration));
       setTempPieceDuration(Number(preset.pieceDuration));
@@ -143,26 +144,6 @@ export default function LockHookPanel(props: LockHookPanelProps) {
     // Convert from Wei to percentage
     // e.g., 10^17 Wei = formatUnits(10^17, 16) = '10' = 10%
     return `${Number(formatUnits(value, 16)).toFixed(2)}%`;
-  };
-
-  const formatTimestamp = (timestamp: number) => {
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const formatDateTimeLocal = (timestamp: number) => {
-    const date = new Date(timestamp * 1000);
-    return date.toISOString().slice(0, 16);
-  };
-
-  const parseDateTimeLocal = (dateTimeStr: string) => {
-    return Math.floor(new Date(dateTimeStr).getTime() / 1000);
   };
 
   const badges = createMemo(() =>
@@ -245,28 +226,15 @@ export default function LockHookPanel(props: LockHookPanelProps) {
         {/* Start Time */}
         <Suspense fallback={<Spin size={14} />}>
           <Show when={isEditing() ? tempIsFixedStart() : streamPreset()?.isFixedStart}>
-            <div class="bg-white rounded-lg p-3 border border-purple-100 mb-4">
-              <div class="flex items-center gap-2 mb-1">
-                <BsCalendar class="text-purple-500" size={16} />
-                <span class="text-xs font-medium text-gray-500">Start Time</span>
-              </div>
-              <Show
-                when={isEditing()}
-                fallback={
-                  <Suspense fallback={<Spin size={14} />}>
-                    <div class="text-lg font-bold text-gray-900">
-                      {formatTimestamp(Number(streamPreset()?.startTime))}
-                    </div>
-                  </Suspense>
-                }
-              >
-                <input
-                  type="datetime-local"
-                  value={formatDateTimeLocal(tempStartTime())}
-                  onInput={(e) => setTempStartTime(parseDateTimeLocal(e.currentTarget.value))}
-                  class="w-full px-3 py-2 border border-purple-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                />
-              </Show>
+            <div class="mb-4">
+              <DatetimePicker
+                value={tempStartTime}
+                setValue={setTempStartTime}
+                label="Start Time (UTC)"
+                icon={BsCalendar}
+                isEditing={isEditing()}
+                color="purple"
+              />
             </div>
           </Show>
         </Suspense>

@@ -86,7 +86,7 @@ export default function LinearPenaltyPanel(props: LinearPenaltyPanelProps) {
         icon={BsFire}
         title="Linear Penalty Hook"
         description="Linear penalty to the recipient before token transfer"
-        proportion={formatUnits(BigInt(props.proportion), 16)}
+        proportion={props.proportion}
         isFallback={props.isFallback}
         color="purple"
       />
@@ -98,7 +98,7 @@ export default function LinearPenaltyPanel(props: LinearPenaltyPanelProps) {
           <DatetimePicker
             value={tempBeginTime}
             setValue={setTempBeginTime}
-            label="Begin Time"
+            label="Begin Time (UTC)"
             icon={BsCalendar}
             isEditing={isEditing()}
             color="purple"
@@ -106,7 +106,7 @@ export default function LinearPenaltyPanel(props: LinearPenaltyPanelProps) {
           <DatetimePicker
             value={tempEndTime}
             setValue={setTempEndTime}
-            label="End Time"
+            label="End Time (UTC)"
             icon={BsCalendar}
             isEditing={isEditing()}
             color="purple"

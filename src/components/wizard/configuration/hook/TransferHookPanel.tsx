@@ -14,7 +14,7 @@ export default function TransferHookPanel(props: TransferHookPanelProps) {
         icon={BsArrowRight}
         title="Transfer Hook"
         description="Direct token transfer to recipients"
-        proportion={formatUnits(BigInt(props.proportion), 16)}
+        proportion={props.proportion}
         isFallback={props.isFallback}
         color="green"
       />

@@ -27,11 +27,13 @@ export default function DatetimePicker(props: DatetimePickerProps) {
 
   const formatDateTimeLocal = (timestamp: bigint) => {
     const date = new Date(Number(timestamp) * 1000);
+    // Format as YYYY-MM-DDTHH:mm for datetime-local input (in UTC)
     return date.toISOString().slice(0, 16);
   };
 
   const parseDateTimeLocal = (dateTimeStr: string) => {
-    return BigInt(Math.floor(new Date(dateTimeStr).getTime() / 1000));
+    // Parse as UTC time
+    return BigInt(Math.floor(new Date(dateTimeStr + 'Z').getTime() / 1000));
   };
 
   const formatTimestamp = (timestamp: bigint) => {
@@ -42,6 +44,7 @@ export default function DatetimePicker(props: DatetimePickerProps) {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'UTC',
     });
   };
 
