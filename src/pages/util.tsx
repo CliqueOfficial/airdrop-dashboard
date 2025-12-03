@@ -168,10 +168,7 @@ function SolanaApprovePanel() {
       tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     });
 
-    const mintAcount = await fetchMaybeMint(
-      client!,
-      address(mint())
-    );
+    const mintAcount = await fetchMaybeMint(client!, address(mint()));
     if (!mintAcount.exists) {
       return;
     }

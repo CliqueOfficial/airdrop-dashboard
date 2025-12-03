@@ -81,7 +81,9 @@ export default function HookPanelHeader(props: HookPanelHeaderProps) {
       <Show when={!props.isFallback && props.proportion}>
         <div class="text-right">
           <div class="flex items-baseline gap-1">
-            <span class={`text-3xl font-bold ${theme.text}`}>{formatUnits(BigInt(props.proportion || '0'), 16)}</span>
+            <span class={`text-3xl font-bold ${theme.text}`}>
+              {formatUnits(BigInt(props.proportion || '0'), 16)}
+            </span>
             <span class="text-lg text-gray-500">%</span>
           </div>
           <p class="text-xs text-gray-500 mt-1">Distribution</p>
