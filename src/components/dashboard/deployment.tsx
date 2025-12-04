@@ -105,7 +105,7 @@ export default function Deployment(props: DeploymentProps) {
     });
   });
   const contractAddress = props.deployment.roles.contract;
-  const projectAdmin = props.deployment.roles.projectAdmin as `0x${string}`;
+  const projectAdmin = props.deployment.roles.projectAdmin;
 
   const { appId } = useParams();
   const { config } = useConfig();
@@ -175,6 +175,29 @@ export default function Deployment(props: DeploymentProps) {
           functionName: 'decimals',
         });
         return decimals;
+      }
+    }
+  );
+
+  const [fee, { refetch: refetchFee }] = createResource(
+    () => {
+      if (!client()) return undefined;
+
+      return {
+        client: client()!,
+        projectAdmin,
+        contractAddress,
+      };
+    },
+    async ({ client, projectAdmin, contractAddress }) => {
+      if (client.chainId.startsWith('sol:')) {
+        const balance = await client.asSolanaClient()!.getBalance(address(projectAdmin)).send();
+        return BigInt(balance.value.toString());
+      } else {
+        const balance = await client.asEvmClient()!.getBalance({
+          address: contractAddress as `0x${string}`,
+        });
+        return balance;
       }
     }
   );
@@ -418,6 +441,15 @@ export default function Deployment(props: DeploymentProps) {
     return allowance.toString();
   };
 
+  const formatFee = (fee: bigint | undefined) => {
+    if (!fee) {
+      return '0';
+    }
+    // Solana uses 9 decimals, EVM uses 18 decimals
+    const decimals = props.deployment.chainId.toString().startsWith('sol:') ? 9 : 18;
+    return formatUnits(fee, decimals);
+  };
+
   return (
     <div class="space-y-6 mb-8">
       {/* Copy Success Toast */}
@@ -561,6 +593,21 @@ export default function Deployment(props: DeploymentProps) {
                   {formatAllowance(allowance(), tokenDecimals()!)}
                 </div>
                 <div class="text-xs text-gray-500">{formatAllowanceWei(allowance())} wei</div>
+              </div>
+            </Suspense>
+          </InfoCard>
+
+          {/* Fee Card */}
+          <InfoCard title="Collected Fee">
+            <Suspense fallback={<LoadingText />}>
+              <div class="space-y-1">
+                <div class="text-2xl font-bold text-gray-900">
+                  {formatFee(fee())}
+                </div>
+                <div class="text-xs text-gray-500">
+                  {fee()?.toString() || '0'}{' '}
+                  {props.deployment.chainId.toString().startsWith('sol:') ? 'lamports' : 'wei'}
+                </div>
               </div>
             </Suspense>
           </InfoCard>
